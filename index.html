@@ -1425,10 +1425,7 @@
             </div>
             <div class="mobile-dept-tags" id="mobileDeptTags">
                 <div class="mobile-dept-tag active" data-dept="">全部</div>
-                <div class="mobile-dept-tag" data-dept="市场运营部">市场运营部</div>
-                <div class="mobile-dept-tag" data-dept="财务管理部">财务管理部</div>
-                <div class="mobile-dept-tag" data-dept="产融数字研究院">产融数字研究院</div>
-                <div class="mobile-dept-tag" data-dept="董事会办公室">董事会办公室</div>
+                <!-- 部门标签由JS动态生成 -->
             </div>
         </div>
         <div class="mobile-employee-list" id="mobileEmployeeList">
@@ -1463,10 +1460,7 @@
                 <div class="header-right">
                     <select class="dept-filter" id="deptFilter">
                         <option value="">全部部门</option>
-                        <option value="市场运营部">市场运营部</option>
-                        <option value="财务管理部">财务管理部</option>
-                        <option value="产融数字研究院">产融数字研究院</option>
-                        <option value="董事会办公室">董事会办公室</option>
+                        <!-- 部门选项由JS动态生成 -->
                     </select>
                 </div>
             </div>
@@ -1477,7 +1471,7 @@
             <!-- 人员结构 -->
             <div class="charts-row charts-row-3">
                 <div class="chart-container">
-                    <div class="chart-title">📊 学历分布</div>
+                    <div class="chart-title">📊 学历性质分布</div>
                     <div class="chart-wrapper"><canvas id="eduChart"></canvas></div>
                 </div>
                 <div class="chart-container">
@@ -1509,7 +1503,7 @@
                     <div class="chart-wrapper"><canvas id="deptPerfChart"></canvas></div>
                 </div>
                 <div class="chart-container talent-grid-container">
-                    <div class="chart-title">🎯 人才九宫格（2025盘点）</div>
+                    <div class="chart-title">🎯 人才九宫格（P/B序列 2025盘点）</div>
                     <div class="chart-wrapper"><canvas id="talentGridChart"></canvas></div>
                 </div>
             </div>
@@ -1560,7 +1554,7 @@
                     <div class="chart-wrapper"><canvas id="perfTrendChart"></canvas></div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">🎯 人才盘点对比（2024 vs 2025）</div>
+                    <div class="chart-title">🎯 人才盘点对比（2024→2025→2026）</div>
                     <div class="chart-wrapper"><canvas id="talentCompareChart"></canvas></div>
                 </div>
             </div>
@@ -1690,6 +1684,59 @@ function getGradeScore(grade) {
     return scores[grade] || 0;
 }
 
+// 判断绩效值是否有效（排除"系统缺少数据"、"-"、空值）
+function isValidPerf(val) {
+    if (!val) return false;
+    const v = val.trim();
+    return v !== '' && v !== '系统缺少数据' && v !== '-';
+}
+
+// 获取职级序列（M/P/B）
+function getLevelSeries(level) {
+    if (!level) return '';
+    return level.charAt(0);
+}
+
+// 判断是否为管理层（M序列）
+function isManagement(level) {
+    return getLevelSeries(level) === 'M';
+}
+
+// 判断盘点结果是否有效（排除"/"和空值）
+function isValidAssessment(val) {
+    if (!val) return false;
+    const v = val.trim();
+    return v !== '' && v !== '/';
+}
+
+// 学历性质归类（用于全景大屏学历分布图）
+function classifyEduNature(nature) {
+    if (!nature || nature === '/' || nature === '') return '未知';
+    if (nature === '统招985' || nature === '统招211') return '统招985/211';
+    if (nature === '统招普通院校') return '统招普通院校';
+    if (nature === '统招专科') return '统招专科';
+    if (nature.startsWith('非统招')) return '非统招';
+    return nature;
+}
+
+// 获取最新的有效绩效季度值
+function getLatestPerf(emp) {
+    const quarters = ['2026Q4','2026Q3','2026Q2','2026Q1','2025Q4','2025Q3','2025Q2','2025Q1','2024Q4','2024Q3','2024Q2','2024Q1'];
+    for (const q of quarters) {
+        if (isValidPerf(emp[q])) return emp[q];
+    }
+    return null;
+}
+
+// 获取所有有效的绩效季度数据（用于趋势图）
+function getPerfTrendData(emp) {
+    const quarters = ['2024Q1','2024Q2','2024Q3','2024Q4','2025Q1','2025Q2','2025Q3','2025Q4','2026Q1','2026Q2','2026Q3','2026Q4'];
+    return quarters.map(q => ({
+        quarter: q,
+        grade: isValidPerf(emp[q]) ? emp[q] : null
+    }));
+}
+
 // 九宫格分类名称到坐标位置的映射
 // 纵轴(行)：0=潜力前20%, 1=潜力20%-90%, 2=潜力后10%
 // 横轴(列)：0=绩效后10%, 1=绩效20%-90%, 2=绩效前20%
@@ -1796,11 +1843,13 @@ function parseCSV(csv) {
     const data = [];
     for (let i = 1; i < rows.length; i++) {
         const values = rows[i];
-        // 跳过空行
-        if (values.length === 1 && values[0] === '') continue;
+        // 跳过空行（所有字段为空或仅含逗号的行）
+        if (values.length === 0 || (values.length === 1 && values[0] === '')) continue;
+        // 跳过全部字段为空的行
+        if (values.every(v => v === '' || v === '/')) continue;
         const row = {};
         headers.forEach((h, idx) => {
-            row[h] = values[idx] || '';
+            row[h] = (idx < values.length) ? (values[idx] || '') : '';
         });
         data.push(row);
     }
@@ -1843,6 +1892,7 @@ async function loadData() {
         // 初始化
         filteredEmployees = [...allEmployees];
         updateDateDisplay();
+        populateDeptFilters();
         updateDashboard();
         initSearch();
 
@@ -1868,6 +1918,36 @@ function updateDateDisplay() {
     const now = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
     document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-CN', options);
+}
+
+// ========== 动态生成部门筛选器 ==========
+function populateDeptFilters() {
+    // 获取所有一级部门（含在职和离职）
+    const depts = [...new Set(allEmployees.map(e => e['一级部门']).filter(d => d && d.trim()))].sort();
+    
+    // 填充桌面端下拉框
+    const deptFilter = document.getElementById('deptFilter');
+    deptFilter.innerHTML = '<option value="">全部部门</option>';
+    depts.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept;
+        option.textContent = dept;
+        deptFilter.appendChild(option);
+    });
+    
+    // 填充移动端标签
+    const mobileDeptTags = document.getElementById('mobileDeptTags');
+    mobileDeptTags.innerHTML = '<div class="mobile-dept-tag active" data-dept="">全部</div>';
+    depts.forEach(dept => {
+        const tag = document.createElement('div');
+        tag.className = 'mobile-dept-tag';
+        tag.dataset.dept = dept;
+        tag.textContent = dept;
+        mobileDeptTags.appendChild(tag);
+    });
+    
+    // 重新绑定移动端标签点击事件
+    initMobileDeptTags();
 }
 
 // ========== 筛选逻辑 ==========
@@ -1910,11 +1990,13 @@ function updateMetrics() {
     
     let warningCount = 0;
     filteredEmployees.forEach(e => {
-        const q3 = e['2024Q3'];
-        const q4 = e['2024Q4'];
-        const cat2025 = e['2025盘点结果'];
+        // 仅对非管理层员工进行预警判断
+        if (isManagement(e['职级'])) return;
+        const latestPerf = getLatestPerf(e);
+        // 使用最近一次有效盘点结果
+        const cat2025 = e['2025盘点结果'] || e['2024盘点结果'];
         const isLowPot = cat2025 === '熟练员工' || cat2025 === '胜任员工' || cat2025 === '问题员工';
-        if ((q3 === 'C' || q3 === 'D' || q4 === 'C' || q4 === 'D') && isLowPot) {
+        if ((latestPerf === 'C' || latestPerf === 'D') && isLowPot) {
             warningCount++;
         }
     });
@@ -1944,7 +2026,7 @@ function updateMetrics() {
     `;
 }
 
-// ========== 学历分布饼图 ==========
+// ========== 学历分布饼图（按最高学历性质分组） ==========
 function updateEduChart() {
     const canvas = document.getElementById('eduChart');
     const ctx = canvas.getContext('2d');
@@ -1954,14 +2036,25 @@ function updateEduChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
+    // 按最高学历性质归类
     const eduCount = {};
     filteredEmployees.forEach(e => {
-        const edu = e['最高学历'] || e['学历'] || '未知';
-        eduCount[edu] = (eduCount[edu] || 0) + 1;
+        const category = classifyEduNature(e['最高学历性质']);
+        eduCount[category] = (eduCount[category] || 0) + 1;
     });
     
-    const data = Object.entries(eduCount).sort((a, b) => b[1] - a[1]);
-    const colors = ['#00d4ff', '#00ff88', '#ffa500', '#ff6b6b'];
+    // 按人数排序，固定顺序优先
+    const sortOrder = ['统招985/211', '统招普通院校', '非统招', '统招专科', '未知'];
+    const data = Object.entries(eduCount).sort((a, b) => {
+        const ia = sortOrder.indexOf(a[0]);
+        const ib = sortOrder.indexOf(b[0]);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return b[1] - a[1];
+    });
+    
+    const colors = ['#00d4ff', '#00ff88', '#ffa500', '#ff6b6b', '#8fa8c8'];
     
     const cx = canvas.width / dpr / 2;
     const cy = canvas.height / dpr / 2;
@@ -2080,7 +2173,7 @@ function updateTenureChart() {
     });
 }
 
-// ========== 职级分布柱状图 ==========
+// ========== 职级分布柱状图（按M/P/B序列分组） ==========
 function updateLevelChart() {
     const canvas = document.getElementById('levelChart');
     const ctx = canvas.getContext('2d');
@@ -2090,14 +2183,26 @@ function updateLevelChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
-    const levelOrder = ['初级', '中级', '高级', '专家', '总监', 'VP'];
+    // 收集所有职级并按序列分组
     const levelCount = {};
     filteredEmployees.forEach(e => {
         const lv = e['职级'];
-        levelCount[lv] = (levelCount[lv] || 0) + 1;
+        if (lv) levelCount[lv] = (levelCount[lv] || 0) + 1;
     });
     
-    const labels = levelOrder.filter(l => levelCount[l]);
+    // 按序列和数字排序
+    const seriesOrder = { 'M': 0, 'P': 1, 'B': 2 };
+    const seriesColors = { 'M': '#ff6b6b', 'P': '#00d4ff', 'B': '#ffa500' };
+    
+    const sortedLevels = Object.keys(levelCount).sort((a, b) => {
+        const sa = seriesOrder[a.charAt(0)] ?? 9;
+        const sb = seriesOrder[b.charAt(0)] ?? 9;
+        if (sa !== sb) return sa - sb;
+        // 同序列内按数字降序（高职级在前）
+        return parseInt(b.slice(1)) - parseInt(a.slice(1));
+    });
+    
+    const labels = sortedLevels;
     const counts = labels.map(l => levelCount[l]);
     const maxCount = Math.max(...counts, 1);
     
@@ -2106,9 +2211,7 @@ function updateLevelChart() {
     const padding = { top: 30, right: 30, bottom: 50, left: 50 };
     const chartW = w - padding.left - padding.right;
     const chartH = h - padding.top - padding.bottom;
-    const barWidth = chartW / labels.length - 25;
-    
-    const colors = ['#4ecdc4', '#45b7d1', '#96ceb4', '#00d4ff', '#ffa500', '#ff6b6b'];
+    const barWidth = Math.min(chartW / labels.length - 8, 40);
     
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     for (let i = 0; i <= 5; i++) {
@@ -2120,13 +2223,16 @@ function updateLevelChart() {
     }
     
     counts.forEach((count, i) => {
-        const x = padding.left + (chartW / labels.length) * i + 12;
+        const x = padding.left + (chartW / labels.length) * i + (chartW / labels.length - barWidth) / 2;
         const barHeight = (count / maxCount) * chartH;
         const y = padding.top + chartH - barHeight;
         
+        const series = labels[i].charAt(0);
+        const color = seriesColors[series] || '#00d4ff';
+        
         const gradient = ctx.createLinearGradient(x, y, x, padding.top + chartH);
-        gradient.addColorStop(0, colors[levelOrder.indexOf(labels[i])] || '#00d4ff');
-        gradient.addColorStop(1, colors[levelOrder.indexOf(labels[i])] || '#0088cc');
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, color + '80');
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
@@ -2138,9 +2244,23 @@ function updateLevelChart() {
         ctx.textAlign = 'center';
         ctx.fillText(count, x + barWidth / 2, y - 10);
         
-        ctx.fillStyle = '#8fa8c8';
-        ctx.font = '11px Microsoft YaHei';
+        ctx.fillStyle = color;
+        ctx.font = 'bold 11px Microsoft YaHei';
         ctx.fillText(labels[i], x + barWidth / 2, h - padding.bottom + 20);
+    });
+    
+    // 序列图例
+    let legendX = w - 150;
+    Object.entries(seriesColors).forEach(([series, color]) => {
+        if (labels.some(l => l.charAt(0) === series)) {
+            ctx.fillStyle = color;
+            ctx.fillRect(legendX, 8, 12, 12);
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px Microsoft YaHei';
+            ctx.textAlign = 'left';
+            ctx.fillText(series + '序列', legendX + 16, 18);
+            legendX += 55;
+        }
     });
 }
 
@@ -2285,7 +2405,7 @@ function updatePerfChart() {
     grades.forEach(g => gradeCount[g] = 0);
     
     filteredEmployees.forEach(e => {
-        const latestPerf = e['2025Q1'] || e['2024Q4'] || e['2024Q3'];
+        const latestPerf = getLatestPerf(e);
         if (latestPerf && grades.includes(latestPerf)) {
             gradeCount[latestPerf]++;
         }
@@ -2345,7 +2465,8 @@ function updateDeptPerfChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
-    const depts = ['市场运营部', '财务管理部', '产融数字研究院', '董事会办公室'];
+    // 动态获取所有一级部门
+    const depts = [...new Set(filteredEmployees.map(e => e['一级部门']).filter(d => d))].sort();
     const grades = ['A+', 'A', 'B', 'C', 'D'];
     const gradeColors = ['#00ff88', '#00d4ff', '#ffa500', '#ff8844', '#ff6b6b'];
     
@@ -2358,7 +2479,7 @@ function updateDeptPerfChart() {
     filteredEmployees.forEach(e => {
         const dept = e['一级部门'];
         if (!deptGradeData[dept]) return;
-        const latestPerf = e['2025Q1'] || e['2024Q4'] || e['2024Q3'];
+        const latestPerf = getLatestPerf(e);
         if (latestPerf && grades.includes(latestPerf)) {
             deptGradeData[dept][latestPerf]++;
         }
@@ -2419,7 +2540,7 @@ function updateDeptPerfChart() {
     });
 }
 
-// ========== 人才九宫格 ==========
+// ========== 人才九宫格（仅统计P/B序列） ==========
 function updateTalentGridChart() {
     const canvas = document.getElementById('talentGridChart');
     const ctx = canvas.getContext('2d');
@@ -2429,12 +2550,18 @@ function updateTalentGridChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
+    // 仅统计P序列和B序列员工（M序列管理层不参与盘点）
+    // 盘点结果为"/"的也视为不参与
+    const assessableEmployees = filteredEmployees.filter(e => 
+        !isManagement(e['职级']) && isValidAssessment(e['2025盘点结果'])
+    );
+    
     // 统计每个分类的人数
     const grid = {};
     GRID_POSITIONS.forEach(row => {
         row.forEach(cat => {
             grid[cat] = [];
-            filteredEmployees.forEach(e => {
+            assessableEmployees.forEach(e => {
                 if (e['2025盘点结果'] === cat) {
                     grid[cat].push(e);
                 }
@@ -2612,6 +2739,7 @@ function showEmployeeDetail(empId) {
     document.getElementById('detailDept').textContent = `${emp['一级部门']} · ${emp['二级部门']}`;
     
     // 基础信息（全景大屏展示）
+    const eduDisplay = [emp['最高学历性质'], emp['最高学历']].filter(v => v && v !== '/').join(' ') || emp['最高学历'] || '未知';
     document.getElementById('basicInfo').innerHTML = `
         <div class="info-item highlight"><div class="label">工号</div><div class="value">${emp['工号']}</div></div>
         <div class="info-item highlight"><div class="label">姓名</div><div class="value">${emp['姓名']}</div></div>
@@ -2621,8 +2749,8 @@ function showEmployeeDetail(empId) {
         <div class="info-item"><div class="label">一级部门</div><div class="value">${emp['一级部门']}</div></div>
         <div class="info-item"><div class="label">二级部门</div><div class="value">${emp['二级部门']}</div></div>
         <div class="info-item"><div class="label">岗位</div><div class="value">${emp['岗位']}</div></div>
-        <div class="info-item highlight"><div class="label">职级</div><div class="value">${emp['职级']}</div></div>
-        <div class="info-item"><div class="label">最高学历</div><div class="value">${emp['最高学历']}</div></div>
+        <div class="info-item highlight"><div class="label">职级</div><div class="value">${emp['职级']}${isManagement(emp['职级']) ? '（管理层）' : ''}</div></div>
+        <div class="info-item"><div class="label">最高学历</div><div class="value">${eduDisplay}</div></div>
         <div class="info-item"><div class="label">司龄</div><div class="value">${tenure}年</div></div>
         <div class="info-item ${emp['状态'] === '离职' ? 'warning' : ''}"><div class="label">状态</div><div class="value">${emp['状态']}</div></div>
     `;
@@ -2648,14 +2776,25 @@ function showEmployeeDetail(empId) {
     
     document.getElementById('workInfo').innerHTML = workInfoHtml;
     
-    // 教育背景
+    // 教育背景（学历性质+学历层次 合并展示）
+    const formatEdu = (nature, level, school, major) => {
+        const natureStr = (nature && nature !== '/') ? nature : '';
+        const levelStr = (level && level !== '/') ? level : '';
+        const schoolStr = (school && school !== '/') ? school : '';
+        const majorStr = (major && major !== '/') ? major : '';
+        const prefix = [natureStr, levelStr].filter(Boolean).join(' ') || '未知';
+        const parts = [prefix];
+        if (schoolStr) parts.push(schoolStr);
+        if (majorStr) parts.push(majorStr);
+        return parts.join(' | ');
+    };
+    
+    const firstEdu = formatEdu(emp['第一学历性质'], emp['第一学历'], emp['第一学历院校'], emp['第一学历专业']);
+    const maxEdu = formatEdu(emp['最高学历性质'], emp['最高学历'], emp['最高学历院校'], emp['最高学历专业']);
+    
     document.getElementById('eduInfo').innerHTML = `
-        <div class="info-item"><div class="label">第一学历</div><div class="value">${emp['第一学历']}</div></div>
-        <div class="info-item"><div class="label">第一学历院校</div><div class="value">${emp['第一学历院校']}</div></div>
-        <div class="info-item"><div class="label">第一学历专业</div><div class="value">${emp['第一学历专业']}</div></div>
-        <div class="info-item highlight"><div class="label">最高学历</div><div class="value">${emp['最高学历']}</div></div>
-        <div class="info-item highlight"><div class="label">最高学历院校</div><div class="value">${emp['最高学历院校']}</div></div>
-        <div class="info-item highlight"><div class="label">最高学历专业</div><div class="value">${emp['最高学历专业']}</div></div>
+        <div class="info-item" style="grid-column: 1 / -1;"><div class="label">第一学历</div><div class="value">${firstEdu}</div></div>
+        <div class="info-item highlight" style="grid-column: 1 / -1;"><div class="label">最高学历</div><div class="value">${maxEdu}</div></div>
     `;
     
     // 异动时间线
@@ -2671,7 +2810,7 @@ function renderTimeline(empId) {
     
     // 从员工数据的异动记录字段解析
     const emp = allEmployees.find(e => e['工号'] === empId);
-    if (!emp || !emp['异动记录']) {
+    if (!emp || !emp['异动记录'] || emp['异动记录'].trim() === '') {
         timelineContent.innerHTML = '<div class="timeline-empty">暂无异动记录</div>';
         return;
     }
@@ -2769,11 +2908,9 @@ function updatePerfTrendChart(emp) {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
-    const quarters = ['2023Q1', '2023Q2', '2023Q3', '2023Q4', '2024Q1', '2024Q2', '2024Q3', '2024Q4', '2025Q1'];
-    const scores = quarters.map(q => {
-        const grade = emp[q];
-        return grade ? getGradeScore(grade) : null;
-    });
+    const trendData = getPerfTrendData(emp);
+    const quarters = trendData.map(d => d.quarter);
+    const scores = trendData.map(d => d.grade ? getGradeScore(d.grade) : null);
     
     const w = canvas.width / dpr;
     const h = canvas.height / dpr;
@@ -2801,7 +2938,7 @@ function updatePerfTrendChart(emp) {
         return {
             x: padding.left + (chartW / (quarters.length - 1)) * i,
             y: padding.top + chartH - ((s - 1) / 4) * chartH,
-            grade: quarters[i]
+            idx: i
         };
     }).filter(p => p !== null);
     
@@ -2832,7 +2969,7 @@ function updatePerfTrendChart(emp) {
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 10px Microsoft YaHei';
         ctx.textAlign = 'center';
-        const grade = emp[p.grade];
+        const grade = emp[quarters[p.idx]];
         ctx.fillText(grade, p.x, p.y + 20);
     });
     
@@ -2841,7 +2978,8 @@ function updatePerfTrendChart(emp) {
         ctx.fillStyle = '#8fa8c8';
         ctx.font = '9px Microsoft YaHei';
         ctx.textAlign = 'center';
-        ctx.fillText(q, x, h - padding.bottom + 20);
+        // 简化季度标签显示
+        ctx.fillText(q.replace('20', "'").replace('Q', 'Q'), x, h - padding.bottom + 20);
     });
 }
 
@@ -2861,9 +2999,22 @@ function updateTalentCompareChart(emp) {
     const cellW = (w - padding.left - padding.right) / 3;
     const cellH = (h - padding.top - padding.bottom) / 3;
     
-    // 获取2024和2025的九宫格位置
-    const pos2024 = getGridPosition(emp['2024盘点结果']);
-    const pos2025 = getGridPosition(emp['2025盘点结果']);
+    // M序列管理层不参与盘点
+    if (isManagement(emp['职级'])) {
+        ctx.fillStyle = '#8fa8c8';
+        ctx.font = 'bold 16px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('管理层（不参与盘点）', w / 2, h / 2 - 10);
+        ctx.font = '14px Microsoft YaHei';
+        ctx.fillStyle = '#5a7a9a';
+        ctx.fillText('M序列员工不参与人才盘点', w / 2, h / 2 + 15);
+        return;
+    }
+    
+    // 获取各年份的九宫格位置
+    const pos2024 = isValidAssessment(emp['2024盘点结果']) ? getGridPosition(emp['2024盘点结果']) : null;
+    const pos2025 = isValidAssessment(emp['2025盘点结果']) ? getGridPosition(emp['2025盘点结果']) : null;
+    const pos2026 = isValidAssessment(emp['2026盘点结果']) ? getGridPosition(emp['2026盘点结果']) : null;
     
     // 绘制九宫格背景和分类名称
     for (let ri = 0; ri < 3; ri++) {
@@ -2913,16 +3064,31 @@ function updateTalentCompareChart(emp) {
         ctx.fillText('2025', x + cellW / 2, y + cellH / 2 + 6);
     }
     
-    // 绘制移动箭头
-    if (pos2024 && pos2025) {
-        const x2024 = padding.left + pos2024.col * cellW + cellW / 2;
-        const y2024 = padding.top + pos2024.row * cellH + cellH / 2;
-        const x2025 = padding.left + pos2025.col * cellW + cellW / 2;
-        const y2025 = padding.top + pos2025.row * cellH + cellH / 2;
+    // 标记2026位置
+    if (pos2026) {
+        const x = padding.left + pos2026.col * cellW;
+        const y = padding.top + pos2026.row * cellH;
+        ctx.fillStyle = 'rgba(255,165,0,0.3)';
+        ctx.fillRect(x + 15, y + 15, cellW - 30, cellH - 30);
+        ctx.fillStyle = '#ffa500';
+        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('2026', x + cellW / 2, y + cellH / 2 + 6);
+    }
+    
+    // 绘制移动箭头（2024→2025→2026）
+    const positions = [pos2024, pos2025, pos2026].filter(p => p !== null);
+    for (let i = 0; i < positions.length - 1; i++) {
+        const p1 = positions[i];
+        const p2 = positions[i + 1];
+        const x1 = padding.left + p1.col * cellW + cellW / 2;
+        const y1 = padding.top + p1.row * cellH + cellH / 2;
+        const x2 = padding.left + p2.col * cellW + cellW / 2;
+        const y2 = padding.top + p2.row * cellH + cellH / 2;
         
         ctx.beginPath();
-        ctx.moveTo(x2024, y2024);
-        ctx.lineTo(x2025, y2025);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.strokeStyle = '#ffa500';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
@@ -2948,16 +3114,26 @@ function updateTalentCompareChart(emp) {
     });
     
     // 图例
-    ctx.fillStyle = '#00d4ff';
-    ctx.fillRect(w - 140, 12, 12, 12);
-    ctx.fillStyle = '#fff';
-    ctx.font = '11px Microsoft YaHei';
+    let legendY = 12;
     ctx.textAlign = 'left';
-    ctx.fillText('2024: ' + (emp['2024盘点结果'] || '无'), w - 125, 22);
+    
+    ctx.fillStyle = '#00d4ff';
+    ctx.fillRect(w - 140, legendY, 12, 12);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px Microsoft YaHei';
+    ctx.fillText('2024: ' + (emp['2024盘点结果'] || '无'), w - 125, legendY + 10);
+    legendY += 18;
     
     ctx.fillStyle = '#00ff88';
-    ctx.fillRect(w - 140, 30, 12, 12);
-    ctx.fillText('2025: ' + (emp['2025盘点结果'] || '无'), w - 125, 40);
+    ctx.fillRect(w - 140, legendY, 12, 12);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('2025: ' + (emp['2025盘点结果'] || '无'), w - 125, legendY + 10);
+    legendY += 18;
+    
+    ctx.fillStyle = '#ffa500';
+    ctx.fillRect(w - 140, legendY, 12, 12);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('2026: ' + (emp['2026盘点结果'] || '无'), w - 125, legendY + 10);
 }
 
 // ========== 搜索功能 ==========
@@ -3271,15 +3447,17 @@ function mobileGoBack() {
 // 初始化移动端搜索
 function initMobileSearch() {
     const input = document.getElementById('mobileSearchInput');
-    const tags = document.querySelectorAll('.mobile-dept-tag');
     
     // 搜索输入实时过滤
     input.addEventListener('input', (e) => {
         mobileSearchQuery = e.target.value.trim();
         renderMobileEmployeeList();
     });
-    
-    // 部门标签点击
+}
+
+// 初始化移动端部门标签点击（在populateDeptFilters后调用）
+function initMobileDeptTags() {
+    const tags = document.querySelectorAll('.mobile-dept-tag');
     tags.forEach(tag => {
         tag.addEventListener('click', () => {
             tags.forEach(t => t.classList.remove('active'));
