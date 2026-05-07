@@ -2325,8 +2325,9 @@ function updateEduChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     // 按最高学历层次归类（只分三档：专科、本科、研究生）
@@ -2369,7 +2370,7 @@ function updateEduChart() {
         ctx.fill();
         
         const midAngle = startAngle + sliceAngle / 2;
-        const labelRadius = radius + 30;
+        const labelRadius = Math.max(10, radius + 30);
         const labelX = cx + Math.cos(midAngle) * labelRadius;
         const labelY = cy + Math.sin(midAngle) * labelRadius;
         
@@ -2406,8 +2407,9 @@ function updateTenureChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     const ranges = [
@@ -2472,8 +2474,9 @@ function updateLevelChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     // 收集所有职级并按序列分组
@@ -2563,8 +2566,9 @@ function updateTrendChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     const months = [];
@@ -2687,8 +2691,9 @@ function updatePerfChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     const grades = ['A+', 'A', 'B', 'C', 'D'];
@@ -2754,8 +2759,9 @@ function updateDeptPerfChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     // 动态获取所有一级部门
@@ -2839,8 +2845,9 @@ function updateTalentGridChart() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     // 仅统计P序列和B序列员工（M序列管理层不参与盘点）
@@ -3353,8 +3360,9 @@ function updatePerfTrendChart(emp) {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     const trendData = getPerfTrendData(emp);
@@ -3549,8 +3557,9 @@ function updateTalentCompareChart(emp) {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    canvas.width = canvas.parentElement.offsetWidth * dpr;
-    canvas.height = canvas.parentElement.offsetHeight * dpr;
+    canvas.width = Math.max(1, canvas.parentElement.offsetWidth) * dpr;
+    canvas.height = Math.max(1, canvas.parentElement.offsetHeight) * dpr;
+    if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
     const w = canvas.width / dpr;
