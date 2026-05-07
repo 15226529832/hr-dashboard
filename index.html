@@ -1410,7 +1410,7 @@
         <div class="loading-error" id="loadingError">
             <div class="error-icon">⚠️</div>
             <div class="error-title">数据加载失败</div>
-            <div class="error-msg" id="errorMsg">无法读取数据文件，请确保 employee_data.csv 文件与页面位于同一目录下。</div>
+            <div class="error-msg" id="errorMsg">无法读取数据文件，请确保 _d7f3_employee_data.csv 文件与页面位于同一目录下。</div>
             <button class="retry-btn" onclick="loadData()">重新加载</button>
         </div>
     </div>
@@ -1824,7 +1824,7 @@ async function loadData() {
 
     try {
         // 加载CSV数据文件
-        const empResponse = await fetch('employee_data.csv');
+        const empResponse = await fetch('_d7f3_employee_data.csv');
 
         if (!empResponse.ok) {
             throw new Error(`员工数据文件加载失败 (HTTP ${empResponse.status})`);
@@ -1837,7 +1837,7 @@ async function loadData() {
         allEmployees = parseCSV(empText);
 
         if (allEmployees.length === 0) {
-            throw new Error('员工数据为空，请检查 employee_data.csv 文件内容');
+            throw new Error('员工数据为空，请检查 _d7f3_employee_data.csv 文件内容');
         }
 
         // 初始化
@@ -1860,7 +1860,7 @@ async function loadData() {
         spinner.style.display = 'none';
         loadText.style.display = 'none';
         errorDiv.style.display = 'flex';
-        errorMsg.textContent = error.message || '无法读取数据文件，请确保 employee_data.csv 文件与页面位于同一目录下。';
+        errorMsg.textContent = error.message || '无法读取数据文件，请确保 _d7f3_employee_data.csv 文件与页面位于同一目录下。';
     }
 }
 
