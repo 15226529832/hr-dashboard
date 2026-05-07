@@ -317,7 +317,53 @@
         .timeline-container {
             min-height: 200px;
             padding: 20px 0;
+        }        /* 绩效区域左右布局 */
+        .perf-layout {
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
         }
+        .perf-chart-area {
+            flex: 3;
+            min-width: 0;
+        }
+        .perf-chart-area .chart-wrapper {
+            height: 220px;
+        }
+        .perf-annual-cards {
+            flex: 1;
+            min-width: 120px;
+            max-width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+        }
+        .annual-perf-card {
+            background: linear-gradient(135deg, rgba(30,60,114,0.6) 0%, rgba(20,40,80,0.8) 100%);
+            border: 1px solid rgba(0,180,255,0.3);
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .annual-perf-card .year-label {
+            font-size: 13px;
+            color: #8fa8c8;
+            font-weight: 500;
+        }
+        .annual-perf-card .grade-badge {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 2px 10px;
+            border-radius: 8px;
+        }
+        .grade-badge.grade-aplus { color: #00ff88; background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.4); }
+        .grade-badge.grade-a { color: #00cc66; background: rgba(0,204,102,0.15); border: 1px solid rgba(0,204,102,0.4); }
+        .grade-badge.grade-b { color: #00bfff; background: rgba(0,191,255,0.15); border: 1px solid rgba(0,191,255,0.4); }
+        .grade-badge.grade-c { color: #ffa500; background: rgba(255,165,0,0.15); border: 1px solid rgba(255,165,0,0.4); }
+        .grade-badge.grade-d { color: #ff4444; background: rgba(255,68,68,0.15); border: 1px solid rgba(255,68,68,0.4); }
         /* 异动时间线样式 */
         .timeline {
             position: relative;
@@ -823,6 +869,18 @@
             /* 详情页图表单列 */
             .detail-charts-row {
                 grid-template-columns: 1fr !important;
+            }
+            .perf-layout {
+                flex-direction: column;
+            }
+            .perf-chart-area .chart-wrapper {
+                height: 180px;
+            }
+            .perf-annual-cards {
+                max-width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
             }
             .detail-charts-row .chart-wrapper {
                 height: 180px;
@@ -1382,6 +1440,21 @@
             .detail-page.mobile-detail .chart-wrapper {
                 height: 200px;
             }
+            .detail-page.mobile-detail .perf-layout {
+                flex-direction: column;
+            }
+            .detail-page.mobile-detail .perf-chart-area .chart-wrapper {
+                height: 200px;
+            }
+            .detail-page.mobile-detail .perf-annual-cards {
+                max-width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .detail-page.mobile-detail .annual-perf-card {
+                min-width: 140px;
+            }
         }
 
         /* ========== 登录遮罩层样式 ========== */
@@ -1660,9 +1733,14 @@
             
             <!-- 绩效图表 -->
             <div class="detail-charts-row">
-                <div class="chart-container">
+                <div class="chart-container perf-section">
                     <div class="chart-title">📈 绩效趋势</div>
-                    <div class="chart-wrapper"><canvas id="perfTrendChart"></canvas></div>
+                    <div class="perf-layout">
+                        <div class="perf-chart-area">
+                            <div class="chart-wrapper"><canvas id="perfTrendChart"></canvas></div>
+                        </div>
+                        <div class="perf-annual-cards" id="perfAnnualCards"></div>
+                    </div>
                 </div>
                 <div class="chart-container">
                     <div class="chart-title">🎯 人才盘点对比（2024→2025→2026）</div>
@@ -1896,12 +1974,36 @@ function getLatestPerf(emp) {
     for (const q of quarters) {
         if (isValidPerf(emp[q])) return emp[q];
     }
+    // Also check annual performance
+    const annualKeys = ['2026年度','2025年度','2024年度'];
+    for (const k of annualKeys) {
+        if (isValidPerf(emp[k])) return emp[k];
+    }
     return null;
 }
 
-// 获取所有有效的绩效季度数据（用于趋势图）
+// 获取所有有效的绩效季度数据（用于趋势图，自动检测最新季度）
 function getPerfTrendData(emp) {
-    const quarters = ['2024Q1','2024Q2','2024Q3','2024Q4','2025Q1','2025Q2','2025Q3','2025Q4','2026Q1','2026Q2','2026Q3','2026Q4'];
+    const allQuarters = ['2024Q1','2024Q2','2024Q3','2024Q4','2025Q1','2025Q2','2025Q3','2025Q4','2026Q1','2026Q2','2026Q3','2026Q4'];
+    // Find the last quarter that has valid data for this employee
+    let lastValidIdx = -1;
+    allQuarters.forEach((q, i) => {
+        if (isValidPerf(emp[q])) lastValidIdx = i;
+    });
+    // Include all quarters up to the last valid one, minimum up to the quarter after last valid for context
+    const endIdx = lastValidIdx >= 0 ? Math.min(lastValidIdx + 1, allQuarters.length - 1) : allQuarters.length - 1;
+    // Also check if there's annual data that extends further
+    const annualKeys = ['2024年度','2025年度','2026年度'];
+    annualKeys.forEach(key => {
+        if (isValidPerf(emp[key])) {
+            const year = key.replace('年度', '');
+            const q4Idx = allQuarters.indexOf(year + 'Q4');
+            if (q4Idx > endIdx) {
+                // Extend to include Q4 of the year with annual data
+            }
+        }
+    });
+    const quarters = allQuarters.slice(0, endIdx + 1);
     return quarters.map(q => ({
         quarter: q,
         grade: isValidPerf(emp[q]) ? emp[q] : null
@@ -2991,6 +3093,7 @@ function showEmployeeDetail(empId) {
     // 工作和合同信息
     let workInfoHtml = `
         <div class="info-item"><div class="label">劳动合同Base地</div><div class="value">${emp['劳动合同Base地']}</div></div>
+        ${emp['联系电话'] && emp['联系电话'] !== '/' && emp['联系电话'].trim() !== '' ? '<div class="info-item"><div class="label">联系电话</div><div class="value">' + emp['联系电话'] + '</div></div>' : ''}
         <div class="info-item"><div class="label">参加工作时间</div><div class="value">${emp['参加工作时间']}</div></div>
         <div class="info-item"><div class="label">工龄</div><div class="value">${workYearsDisplay}</div></div>
         <div class="info-item"><div class="label">入职日期</div><div class="value">${emp['入职日期']}</div></div>
@@ -3145,12 +3248,21 @@ function updatePerfTrendChart(emp) {
     const quarters = trendData.map(d => d.quarter);
     const scores = trendData.map(d => d.grade ? getGradeScore(d.grade) : null);
     
+    // Get annual performance data for diamond markers
+    const annualKeys = ['2024年度', '2025年度', '2026年度'];
+    const annualData = annualKeys.map(key => ({
+        key: key,
+        grade: isValidPerf(emp[key]) ? emp[key] : null,
+        score: isValidPerf(emp[key]) ? getGradeScore(emp[key]) : null
+    })).filter(d => d.score !== null);
+    
     const w = canvas.width / dpr;
     const h = canvas.height / dpr;
     const padding = { top: 30, right: 30, bottom: 50, left: 50 };
     const chartW = w - padding.left - padding.right;
     const chartH = h - padding.top - padding.bottom;
     
+    // Grid lines and Y-axis labels
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     for (let i = 0; i <= 4; i++) {
         const y = padding.top + (chartH / 4) * i;
@@ -3166,33 +3278,65 @@ function updatePerfTrendChart(emp) {
         ctx.fillText(labels[4 - i], padding.left - 10, y + 4);
     }
     
+    // Calculate positions for quarterly data points
     const validPoints = scores.map((s, i) => {
         if (s === null) return null;
         return {
             x: padding.left + (chartW / (quarters.length - 1)) * i,
             y: padding.top + chartH - ((s - 1) / 4) * chartH,
-            idx: i
+            idx: i,
+            isAnnual: false
         };
     }).filter(p => p !== null);
     
+    // Calculate positions for annual performance diamond markers
+    // Place each annual marker after the Q4 of that year
+    const annualPoints = annualData.map(d => {
+        const year = d.key.replace('年度', '');
+        const q4Key = year + 'Q4';
+        const q4Idx = quarters.indexOf(q4Key);
+        if (q4Idx === -1) return null;
+        // Position after Q4 with a small offset
+        const q4x = padding.left + (chartW / (quarters.length - 1)) * q4Idx;
+        const spacing = chartW / (quarters.length - 1);
+        return {
+            x: q4x + spacing * 0.5,
+            y: padding.top + chartH - ((d.score - 1) / 4) * chartH,
+            grade: d.grade,
+            score: d.score,
+            yearLabel: year,
+            isAnnual: true
+        };
+    }).filter(p => p !== null);
+    
+    // Draw line connecting valid quarterly points (break on null)
     if (validPoints.length > 0) {
         ctx.beginPath();
+        let started = false;
+        let prevIdx = -2;
         validPoints.forEach((p, i) => {
-            if (i === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
+            // Break line if there's a gap (non-consecutive quarters with data)
+            if (!started || p.idx !== prevIdx + 1) {
+                ctx.moveTo(p.x, p.y);
+                started = true;
+            } else {
+                ctx.lineTo(p.x, p.y);
+            }
+            prevIdx = p.idx;
         });
         
         const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
         gradient.addColorStop(0, '#00ff88');
         gradient.addColorStop(1, '#00d4ff');
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.stroke();
     }
     
+    // Draw quarterly data points
     validPoints.forEach(p => {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
         ctx.fillStyle = '#00d4ff';
         ctx.fill();
         ctx.strokeStyle = '#fff';
@@ -3203,17 +3347,87 @@ function updatePerfTrendChart(emp) {
         ctx.font = 'bold 10px Microsoft YaHei';
         ctx.textAlign = 'center';
         const grade = emp[quarters[p.idx]];
-        ctx.fillText(grade, p.x, p.y + 20);
+        ctx.fillText(grade, p.x, p.y - 12);
     });
     
+    // Draw annual performance diamond markers (larger, prominent)
+    annualPoints.forEach(p => {
+        const size = 10;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - size);
+        ctx.lineTo(p.x + size, p.y);
+        ctx.lineTo(p.x, p.y + size);
+        ctx.lineTo(p.x - size, p.y);
+        ctx.closePath();
+        
+        // Fill with grade-specific color
+        const gradeColor = getGradeColor(p.grade);
+        ctx.fillStyle = gradeColor + '40';
+        ctx.fill();
+        ctx.strokeStyle = gradeColor;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        
+        // Grade label above diamond
+        ctx.fillStyle = gradeColor;
+        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.grade, p.x, p.y - 16);
+        
+        // Year label below diamond
+        ctx.fillStyle = '#8fa8c8';
+        ctx.font = '9px Microsoft YaHei';
+        ctx.fillText("'" + p.yearLabel.slice(2) + '年', p.x, p.y + 22);
+    });
+    
+    // X-axis labels for quarters
     quarters.forEach((q, i) => {
         const x = padding.left + (chartW / (quarters.length - 1)) * i;
         ctx.fillStyle = '#8fa8c8';
         ctx.font = '9px Microsoft YaHei';
         ctx.textAlign = 'center';
-        // 简化季度标签显示
+        // Simplified quarter label
         ctx.fillText(q.replace('20', "'").replace('Q', 'Q'), x, h - padding.bottom + 20);
     });
+    
+    // Render annual performance cards
+    renderAnnualPerfCards(emp);
+}
+
+// Get color for a performance grade
+function getGradeColor(grade) {
+    const colors = {
+        'A+': '#00ff88',
+        'A': '#00cc66',
+        'B': '#00bfff',
+        'C': '#ffa500',
+        'D': '#ff4444'
+    };
+    return colors[grade] || '#8fa8c8';
+}
+
+// Render annual performance cards on the right side
+function renderAnnualPerfCards(emp) {
+    const container = document.getElementById('perfAnnualCards');
+    if (!container) return;
+    
+    const annualKeys = ['2024年度', '2025年度', '2026年度'];
+    let html = '';
+    
+    annualKeys.forEach(key => {
+        const grade = emp[key];
+        if (!isValidPerf(grade)) return;
+        
+        const year = key.replace('年度', '');
+        const gradeClass = grade === 'A+' ? 'aplus' : grade.toLowerCase();
+        
+        html += '<div class="annual-perf-card">';
+        html += '<span class="year-label">' + year + '年</span>';
+        html += '<span class="grade-badge grade-' + gradeClass + '">' + grade + '</span>';
+        html += '</div>';
+    });
+    
+    container.innerHTML = html || '<div style="color:#5a7a9a;font-size:12px;text-align:center;">暂无年度绩效</div>';
 }
 
 // ========== 人才盘点对比 ==========
