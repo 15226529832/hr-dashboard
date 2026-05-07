@@ -1878,7 +1878,7 @@ function getBirthFromId(idCard) {
     return `${idCard.slice(6, 10)}/${idCard.slice(10, 12)}/${idCard.slice(12, 14)}`;
 }
 
-function getAgeFromId(idCard, refDate = new Date(2025, 2, 15)) {
+function getAgeFromId(idCard, refDate = new Date()) {
     if (!idCard || idCard.length !== 18) return 0;
     const birthStr = getBirthFromId(idCard);
     const birth = new Date(birthStr);
@@ -1890,7 +1890,7 @@ function getAgeFromId(idCard, refDate = new Date(2025, 2, 15)) {
     return age;
 }
 
-function calcYears(startDate, refDate = new Date(2025, 2, 15)) {
+function calcYears(startDate, refDate = new Date()) {
     const start = new Date(startDate);
     return ((refDate - start) / (365.25 * 24 * 60 * 60 * 1000)).toFixed(1);
 }
@@ -2257,7 +2257,7 @@ function updateDashboard() {
 
 // ========== 指标卡 ==========
 function updateMetrics() {
-    const now = new Date(2025, 2, 15);
+    const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     
@@ -2570,7 +2570,7 @@ function updateTrendChart() {
     const months = [];
     const joinData = [];
     const leaveData = [];
-    const now = new Date(2025, 2, 15);
+    const now = new Date();
     
     for (let i = 11; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -3017,7 +3017,7 @@ function closeWarningPopup() {
 }
 
 function showJoinPopup() {
-    const now = new Date(2025, 2, 15);
+    const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     const joinList = filteredEmployees.filter(e => {
@@ -3054,7 +3054,7 @@ function closeJoinPopup() {
 }
 
 function showLeavePopup() {
-    const now = new Date(2025, 2, 15);
+    const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     const leaveList = allEmployees.filter(e => {
