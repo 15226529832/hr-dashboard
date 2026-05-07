@@ -929,6 +929,349 @@
             background: rgba(0, 180, 255, 0.3);
             box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
         }
+
+        /* ========== 移动端"搜索优先"模式 ========== */
+        .mobile-search-page {
+            display: none;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .mobile-search-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 100%);
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top, 0px));
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+        }
+
+        .mobile-search-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .mobile-search-input-wrap {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .mobile-search-input-wrap input {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(0, 180, 255, 0.4);
+            background: rgba(0, 30, 60, 0.9);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .mobile-search-input-wrap input::placeholder {
+            color: #5a7a9a;
+        }
+
+        .mobile-search-input-wrap input:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
+            background: rgba(0, 30, 60, 1);
+        }
+
+        .mobile-search-input-wrap .search-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #00d4ff;
+            pointer-events: none;
+        }
+
+        .mobile-dept-tags {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .mobile-dept-tags::-webkit-scrollbar {
+            display: none;
+        }
+
+        .mobile-dept-tag {
+            flex-shrink: 0;
+            padding: 7px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            background: rgba(0, 30, 60, 0.6);
+            color: #8fa8c8;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.25s;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-dept-tag.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(0, 255, 136, 0.15));
+            border-color: #00d4ff;
+            color: #00d4ff;
+            font-weight: 600;
+            box-shadow: 0 0 12px rgba(0, 180, 255, 0.2);
+        }
+
+        .mobile-dept-tag:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-employee-list {
+            padding: 12px 16px 80px 16px;
+        }
+
+        .mobile-employee-count {
+            font-size: 12px;
+            color: #5a7a9a;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .mobile-employee-card {
+            background: linear-gradient(135deg, rgba(30, 60, 114, 0.7) 0%, rgba(20, 40, 80, 0.85) 100%);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mobile-employee-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #00d4ff, #00ff88);
+            border-radius: 3px 0 0 3px;
+        }
+
+        .mobile-employee-card:active {
+            background: linear-gradient(135deg, rgba(0, 180, 255, 0.3) 0%, rgba(20, 40, 80, 0.9) 100%);
+            border-color: rgba(0, 180, 255, 0.4);
+            transform: scale(0.98);
+        }
+
+        .mobile-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .mobile-card-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .mobile-card-id {
+            font-size: 12px;
+            color: #5a7a9a;
+        }
+
+        .mobile-card-level {
+            font-size: 12px;
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .mobile-card-info {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .mobile-card-info span {
+            font-size: 12px;
+            color: #8fa8c8;
+            background: rgba(0, 30, 60, 0.5);
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .mobile-card-arrow {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3a5a7a;
+            font-size: 16px;
+        }
+
+        .mobile-fullscreen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            padding: 10px 18px;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 80, 0.95));
+            color: #00d4ff;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-fullscreen-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-back-search-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            padding: 10px 18px;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 80, 0.95));
+            color: #00d4ff;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s;
+            display: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-back-search-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 移动端详情页优化 */
+        .mobile-detail-back {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1001;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 16px;
+            padding-top: calc(12px + env(safe-area-inset-top, 0px));
+            background: linear-gradient(180deg, rgba(10, 22, 40, 0.98), rgba(10, 22, 40, 0.85));
+            border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+            color: #00d4ff;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-detail-back:active {
+            color: #00ff88;
+        }
+
+        .mobile-no-result {
+            text-align: center;
+            padding: 60px 20px;
+            color: #5a7a9a;
+        }
+
+        .mobile-no-result .no-result-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .mobile-no-result .no-result-text {
+            font-size: 14px;
+        }
+
+        /* ========== 移动端"搜索优先"模式激活 ========== */
+        @media (max-width: 768px) {
+            .mobile-search-page.active {
+                display: block;
+            }
+
+            /* 搜索优先模式下隐藏大屏主内容 */
+            .dashboard.mobile-mode .main-page,
+            .dashboard.mobile-mode .search-box {
+                display: none !important;
+            }
+
+            .dashboard.mobile-mode .header {
+                display: none !important;
+            }
+
+            /* 移动端详情页信息卡单列 */
+            .detail-page.mobile-detail .info-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .detail-page.mobile-detail .info-grid-2col {
+                grid-template-columns: 1fr !important;
+            }
+
+            .detail-page.mobile-detail .info-item {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .detail-page.mobile-detail .info-item .label {
+                font-size: 11px;
+                margin-bottom: 2px;
+            }
+
+            .detail-page.mobile-detail .info-item .value {
+                font-size: 14px;
+            }
+
+            /* 详情页头像区域竖排 */
+            .detail-page.mobile-detail .info-card > div[style*="display: flex"] {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center;
+            }
+
+            /* 移动端详情页返回按钮调整 */
+            .detail-page.mobile-detail .back-btn {
+                display: none;
+            }
+
+            .mobile-detail-back.active {
+                display: flex;
+            }
+
+            /* 移动端详情页图表全宽 */
+            .detail-page.mobile-detail .detail-charts-row {
+                grid-template-columns: 1fr !important;
+            }
+
+            .detail-page.mobile-detail .chart-wrapper {
+                height: 200px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -943,6 +1286,37 @@
             <button class="retry-btn" onclick="loadData()">重新加载</button>
         </div>
     </div>
+
+    <!-- 移动端"搜索优先"页面 -->
+    <div class="mobile-search-page" id="mobileSearchPage">
+        <div class="mobile-search-header">
+            <div class="mobile-search-title">🚀 员工信息查询</div>
+            <div class="mobile-search-input-wrap">
+                <input type="text" id="mobileSearchInput" placeholder="输入姓名或工号搜索" autocomplete="off">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="mobile-dept-tags" id="mobileDeptTags">
+                <div class="mobile-dept-tag active" data-dept="">全部</div>
+                <div class="mobile-dept-tag" data-dept="市场运营部">市场运营部</div>
+                <div class="mobile-dept-tag" data-dept="财务管理部">财务管理部</div>
+                <div class="mobile-dept-tag" data-dept="产融数字研究院">产融数字研究院</div>
+                <div class="mobile-dept-tag" data-dept="董事会办公室">董事会办公室</div>
+            </div>
+        </div>
+        <div class="mobile-employee-list" id="mobileEmployeeList">
+            <div class="mobile-employee-count" id="mobileEmployeeCount"></div>
+            <div id="mobileCardContainer"></div>
+        </div>
+    </div>
+
+    <!-- 移动端详情页返回栏 -->
+    <div class="mobile-detail-back" id="mobileDetailBack" onclick="mobileGoBack()">← 返回搜索</div>
+
+    <!-- 移动端切换全景大屏按钮 -->
+    <button class="mobile-fullscreen-btn" id="mobileFullscreenBtn" onclick="switchToDashboard()">📊 全景大屏</button>
+
+    <!-- 移动端全景大屏返回搜索按钮 -->
+    <button class="mobile-back-search-btn" id="mobileBackSearchBtn" onclick="switchToSearch()">🔍 返回搜索</button>
 
     <div class="dashboard">
         <!-- 全局搜索容器 -->
@@ -1266,6 +1640,9 @@ async function loadData() {
         setTimeout(() => {
             overlay.style.display = 'none';
         }, 500);
+
+        // 检查移动端模式
+        checkMobileMode();
 
     } catch (error) {
         console.error('数据加载失败:', error);
@@ -1997,6 +2374,14 @@ function showEmployeeDetail(empId) {
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('detailPage').classList.add('active');
     
+    // 移动端：如果是从全景大屏进入详情页，标记为移动端详情
+    if (isMobileMode) {
+        document.getElementById('detailPage').classList.add('mobile-detail');
+        document.getElementById('mobileDetailBack').classList.add('active');
+        mobilePreviousPage = 'dashboard';
+        updateMobileButtons();
+    }
+    
     // 从身份证号提取性别和年龄
     const idCard = emp['身份证号'] || '';
     const gender = getGenderFromId(idCard) || emp['性别'] || '未知';
@@ -2352,9 +2737,8 @@ function initSearch() {
     });
     
     // 移动端：搜索框聚焦时滚动到可见区域
-    const isMobile = () => window.innerWidth <= 768;
     input.addEventListener('focus', () => {
-        if (isMobile()) {
+        if (window.innerWidth <= 768) {
             setTimeout(() => {
                 input.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 300);
@@ -2377,6 +2761,7 @@ document.getElementById('deptFilter').addEventListener('change', (e) => {
 // ========== 初始化 ==========
 window.addEventListener('load', loadData);
 window.addEventListener('resize', () => {
+    checkMobileMode();
     if (document.getElementById('mainPage').classList.contains('hidden') === false) {
         updateEduChart();
         updateTenureChart();
@@ -2387,6 +2772,274 @@ window.addEventListener('resize', () => {
         updateTalentGridChart();
     }
 });
+
+// ========== 移动端"搜索优先"模式 ==========
+let isMobileMode = false;
+let mobileCurrentDept = '';
+let mobileSearchQuery = '';
+let mobilePreviousPage = 'search'; // 'search' or 'dashboard'
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+function checkMobileMode() {
+    const wasMobile = isMobileMode;
+    isMobileMode = isMobile();
+    
+    if (isMobileMode && !wasMobile) {
+        // 切换到移动端 - 激活搜索优先模式
+        activateMobileSearchMode();
+    } else if (!isMobileMode && wasMobile) {
+        // 切换到桌面端 - 退出移动模式
+        deactivateMobileSearchMode();
+    }
+    
+    // 更新浮动按钮显示
+    updateMobileButtons();
+}
+
+function activateMobileSearchMode() {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const dashboard = document.querySelector('.dashboard');
+    
+    // 默认显示搜索页
+    searchPage.classList.add('active');
+    dashboard.classList.add('mobile-mode');
+    
+    // 渲染员工卡片
+    renderMobileEmployeeList();
+}
+
+function deactivateMobileSearchMode() {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const dashboard = document.querySelector('.dashboard');
+    
+    searchPage.classList.remove('active');
+    dashboard.classList.remove('mobile-mode');
+    
+    // 隐藏移动端专属按钮
+    document.getElementById('mobileFullscreenBtn').style.display = 'none';
+    document.getElementById('mobileBackSearchBtn').style.display = 'none';
+    document.getElementById('mobileDetailBack').classList.remove('active');
+    
+    // 确保详情页状态正常
+    document.getElementById('detailPage').classList.remove('mobile-detail');
+}
+
+function updateMobileButtons() {
+    const fullscreenBtn = document.getElementById('mobileFullscreenBtn');
+    const backSearchBtn = document.getElementById('mobileBackSearchBtn');
+    
+    if (!isMobileMode) return;
+    
+    const searchPage = document.getElementById('mobileSearchPage');
+    const mainPage = document.getElementById('mainPage');
+    const detailPage = document.getElementById('detailPage');
+    
+    // 搜索页显示时 -> 显示"全景大屏"按钮
+    if (searchPage.classList.contains('active') && !detailPage.classList.contains('active')) {
+        fullscreenBtn.style.display = 'block';
+        backSearchBtn.style.display = 'none';
+    }
+    // 全景大屏显示时 -> 显示"返回搜索"按钮
+    else if (!searchPage.classList.contains('active') && !detailPage.classList.contains('active')) {
+        fullscreenBtn.style.display = 'none';
+        backSearchBtn.style.display = 'block';
+    }
+    // 详情页显示时 -> 隐藏两个按钮
+    else {
+        fullscreenBtn.style.display = 'none';
+        backSearchBtn.style.display = 'none';
+    }
+}
+
+function switchToDashboard() {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const dashboard = document.querySelector('.dashboard');
+    
+    searchPage.classList.remove('active');
+    dashboard.classList.remove('mobile-mode');
+    
+    mobilePreviousPage = 'dashboard';
+    updateMobileButtons();
+    
+    // 确保大屏图表正确渲染
+    setTimeout(() => {
+        if (document.getElementById('mainPage').classList.contains('hidden') === false) {
+            updateEduChart();
+            updateTenureChart();
+            updateLevelChart();
+            updateTrendChart();
+            updatePerfChart();
+            updateDeptPerfChart();
+            updateTalentGridChart();
+        }
+    }, 100);
+}
+
+function switchToSearch() {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const dashboard = document.querySelector('.dashboard');
+    
+    searchPage.classList.add('active');
+    dashboard.classList.add('mobile-mode');
+    
+    mobilePreviousPage = 'search';
+    updateMobileButtons();
+}
+
+function renderMobileEmployeeList() {
+    const container = document.getElementById('mobileCardContainer');
+    const countEl = document.getElementById('mobileEmployeeCount');
+    
+    let employees = allEmployees.filter(e => e['状态'] === '在职');
+    
+    // 部门筛选
+    if (mobileCurrentDept) {
+        employees = employees.filter(e => e['一级部门'] === mobileCurrentDept);
+    }
+    
+    // 搜索筛选
+    if (mobileSearchQuery) {
+        const query = mobileSearchQuery.toLowerCase();
+        employees = employees.filter(e =>
+            e['姓名'].toLowerCase().includes(query) ||
+            e['工号'].toLowerCase() === query ||
+            e['工号'].toLowerCase().includes(query)
+        );
+    }
+    
+    countEl.textContent = `共 ${employees.length} 人`;
+    
+    if (employees.length === 0) {
+        container.innerHTML = `
+            <div class="mobile-no-result">
+                <div class="no-result-icon">🔍</div>
+                <div class="no-result-text">未找到匹配的员工</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = employees.map(e => `
+        <div class="mobile-employee-card" onclick="mobileShowDetail('${e['工号']}')" ontouchstart="this.style.background='linear-gradient(135deg, rgba(0,180,255,0.25) 0%, rgba(20,40,80,0.9) 100%)'" ontouchend="this.style.background=''">
+            <div class="mobile-card-top">
+                <div>
+                    <span class="mobile-card-name">${e['姓名']}</span>
+                    <span class="mobile-card-id">${e['工号']}</span>
+                </div>
+                <span class="mobile-card-level">${e['职级']}</span>
+            </div>
+            <div class="mobile-card-info">
+                <span>${e['一级部门']}</span>
+                <span>${e['二级部门']}</span>
+                <span>${e['岗位']}</span>
+            </div>
+            <span class="mobile-card-arrow">›</span>
+        </div>
+    `).join('');
+}
+
+function mobileShowDetail(empId) {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const detailPage = document.getElementById('detailPage');
+    
+    // 隐藏搜索页
+    searchPage.classList.remove('active');
+    
+    // 标记从搜索页进入
+    mobilePreviousPage = 'search';
+    
+    // 显示详情页并标记为移动端详情
+    showEmployeeDetail(empId);
+    detailPage.classList.add('mobile-detail');
+    
+    // 显示移动端返回栏
+    document.getElementById('mobileDetailBack').classList.add('active');
+    
+    // 隐藏浮动按钮
+    updateMobileButtons();
+    
+    // 滚动到顶部
+    window.scrollTo(0, 0);
+}
+
+function mobileGoBack() {
+    const searchPage = document.getElementById('mobileSearchPage');
+    const detailPage = document.getElementById('detailPage');
+    
+    // 隐藏详情页
+    detailPage.classList.remove('active');
+    detailPage.classList.remove('mobile-detail');
+    document.getElementById('mobileDetailBack').classList.remove('active');
+    
+    // 根据上一次的页面决定回到哪里
+    if (mobilePreviousPage === 'dashboard') {
+        // 回到全景大屏
+        document.getElementById('mainPage').classList.remove('hidden');
+        const dashboard = document.querySelector('.dashboard');
+        dashboard.classList.remove('mobile-mode');
+    } else {
+        // 回到搜索页
+        searchPage.classList.add('active');
+        const dashboard = document.querySelector('.dashboard');
+        dashboard.classList.add('mobile-mode');
+    }
+    
+    currentEmployee = null;
+    updateMobileButtons();
+    
+    // 如果回到全景大屏，重新渲染图表
+    if (mobilePreviousPage === 'dashboard') {
+        setTimeout(() => {
+            updateEduChart();
+            updateTenureChart();
+            updateLevelChart();
+            updateTrendChart();
+            updatePerfChart();
+            updateDeptPerfChart();
+            updateTalentGridChart();
+        }, 100);
+    }
+}
+
+// 初始化移动端搜索
+function initMobileSearch() {
+    const input = document.getElementById('mobileSearchInput');
+    const tags = document.querySelectorAll('.mobile-dept-tag');
+    
+    // 搜索输入实时过滤
+    input.addEventListener('input', (e) => {
+        mobileSearchQuery = e.target.value.trim();
+        renderMobileEmployeeList();
+    });
+    
+    // 部门标签点击
+    tags.forEach(tag => {
+        tag.addEventListener('click', () => {
+            tags.forEach(t => t.classList.remove('active'));
+            tag.classList.add('active');
+            mobileCurrentDept = tag.dataset.dept;
+            renderMobileEmployeeList();
+        });
+    });
+}
+
+// 页面加载后检查移动端模式
+document.addEventListener('DOMContentLoaded', () => {
+    initMobileSearch();
+});
+
+// 覆盖原有showMainPage以兼容移动端
+const originalShowMainPage = showMainPage;
+showMainPage = function() {
+    if (isMobileMode && document.getElementById('detailPage').classList.contains('mobile-detail')) {
+        mobileGoBack();
+    } else {
+        originalShowMainPage();
+    }
+};
 </script>
 </body>
 </html>
