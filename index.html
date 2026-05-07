@@ -460,6 +460,117 @@
             font-size: 12px;
             color: #8fa8c8;
         }
+        /* 预警弹窗样式 */
+        .warning-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .warning-popup.active {
+            display: flex;
+        }
+        .warning-popup-content {
+            background: linear-gradient(135deg, rgba(30,60,114,0.95) 0%, rgba(20,40,80,0.98) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,107,107,0.4);
+            box-shadow: 0 0 30px rgba(255,107,107,0.15);
+        }
+        .warning-popup-content h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .warning-popup-rule {
+            text-align: center;
+            color: #ffa500;
+            font-size: 12px;
+            margin-bottom: 20px;
+            padding: 8px 15px;
+            background: rgba(255,165,0,0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255,165,0,0.2);
+            line-height: 1.6;
+        }
+        .warning-popup-close {
+            float: right;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .warning-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .warning-table th {
+            padding: 12px 10px;
+            text-align: left;
+            color: #00d4ff;
+            font-size: 13px;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(0,180,255,0.3);
+            white-space: nowrap;
+        }
+        .warning-table td {
+            padding: 12px 10px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .warning-table tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .warning-table tbody tr:hover {
+            background: rgba(0,180,255,0.15);
+        }
+        .warning-table .emp-name {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+        .warning-table .perf-cd {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+        .warning-table .assessment-low {
+            color: #ffa500;
+            font-weight: 600;
+        }
+        .warning-empty {
+            text-align: center;
+            color: #8fa8c8;
+            padding: 40px;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) {
+            .warning-popup-content {
+                margin: 10px;
+                padding: 15px;
+                max-height: 85vh;
+            }
+            .warning-table th, .warning-table td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+            .warning-table th:nth-child(4),
+            .warning-table td:nth-child(4) {
+                display: none;
+            }
+        }
+
         /* 全局页面 */
         .main-page {
             display: block;
@@ -1471,7 +1582,7 @@
             <!-- 人员结构 -->
             <div class="charts-row charts-row-3">
                 <div class="chart-container">
-                    <div class="chart-title">📊 学历性质分布</div>
+                    <div class="chart-title">📊 学历分布</div>
                     <div class="chart-wrapper"><canvas id="eduChart"></canvas></div>
                 </div>
                 <div class="chart-container">
@@ -1570,6 +1681,17 @@
         </div>
     </div>
 
+
+    <!-- 预警详情弹窗 -->
+    <div class="warning-popup" id="warningPopup">
+        <div class="warning-popup-content">
+            <button class="warning-popup-close" onclick="closeWarningPopup()">&times;</button>
+            <h3>⚠️ 人才流失预警人员</h3>
+            <div class="warning-popup-rule">预警规则：近2个季度绩效为C/D，且人才盘点处于差距员工/问题员工/胜任员工位置（M序列不参与预警）</div>
+            <div id="warningContent"></div>
+        </div>
+    </div>
+
 <script>
 // ========== 密码验证模块 ==========
 const PASSWORD_HASH = '6e102fc7676960990eb3c2212b028767e112abf3e761928c4fed33f54e791300';
@@ -1659,7 +1781,7 @@ function getGenderFromId(idCard) {
 
 function getBirthFromId(idCard) {
     if (!idCard || idCard.length !== 18) return '';
-    return `${idCard.slice(6, 10)}-${idCard.slice(10, 12)}-${idCard.slice(12, 14)}`;
+    return `${idCard.slice(6, 10)}/${idCard.slice(10, 12)}/${idCard.slice(12, 14)}`;
 }
 
 function getAgeFromId(idCard, refDate = new Date(2025, 2, 15)) {
@@ -1678,6 +1800,44 @@ function calcYears(startDate, refDate = new Date(2025, 2, 15)) {
     const start = new Date(startDate);
     return ((refDate - start) / (365.25 * 24 * 60 * 60 * 1000)).toFixed(1);
 }
+
+// 计算年月格式（如"5年3月"），用于司龄/工龄展示
+function calcYearsMonths(startDateStr) {
+    if (!startDateStr) return '';
+    const start = new Date(startDateStr);
+    const now = new Date();
+    if (isNaN(start.getTime())) return '';
+    let years = now.getFullYear() - start.getFullYear();
+    let months = now.getMonth() - start.getMonth();
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+    if (now.getDate() < start.getDate()) {
+        months--;
+        if (months < 0) {
+            years--;
+            months += 12;
+        }
+    }
+    if (years < 0) return '';
+    return years + '年' + months + '月';
+}
+
+// 计算年龄（从出生日期字符串，使用当前日期）
+function calcAge(birthDateStr) {
+    if (!birthDateStr) return '';
+    const birth = new Date(birthDateStr);
+    const now = new Date();
+    if (isNaN(birth.getTime())) return '';
+    let age = now.getFullYear() - birth.getFullYear();
+    const monthDiff = now.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
+
 
 function getGradeScore(grade) {
     const scores = {'A+': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1};
@@ -1718,6 +1878,17 @@ function classifyEduNature(nature) {
     if (nature.startsWith('非统招')) return '非统招';
     return nature;
 }
+
+// 学历层次归类（用于全景大屏学历饼图，只分三档：专科、本科、研究生）
+function classifyEduLevel(level) {
+    if (!level || level === '/' || level === '') return '未知';
+    const l = level.trim();
+    if (l === '博士' || l === '研究生' || l === '硕士') return '研究生';
+    if (l === '本科') return '本科';
+    if (l === '专科' || l === '大专') return '专科';
+    return '其他';
+}
+
 
 // 获取最新的有效绩效季度值
 function getLatestPerf(emp) {
@@ -1988,18 +2159,22 @@ function updateMetrics() {
     const avgTenure = filteredEmployees.reduce((sum, e) => 
         sum + parseFloat(calcYears(e['入职日期'])), 0) / totalCount;
     
-    let warningCount = 0;
+    // 人才流失预警计算
+    const warningEmployees = [];
     filteredEmployees.forEach(e => {
-        // 仅对非管理层员工进行预警判断
+        // 仅对非管理层员工进行预警判断（M序列不参与预警）
         if (isManagement(e['职级'])) return;
         const latestPerf = getLatestPerf(e);
         // 使用最近一次有效盘点结果
         const cat2025 = e['2025盘点结果'] || e['2024盘点结果'];
-        const isLowPot = cat2025 === '熟练员工' || cat2025 === '胜任员工' || cat2025 === '问题员工';
+        const isLowPot = cat2025 === '差距员工' || cat2025 === '问题员工' || cat2025 === '胜任员工';
         if ((latestPerf === 'C' || latestPerf === 'D') && isLowPot) {
-            warningCount++;
+            warningEmployees.push(e);
         }
     });
+    const warningCount = warningEmployees.length;
+    // 保存预警人员列表供弹窗使用
+    window._warningEmployees = warningEmployees;
     
     const metricsRow = document.getElementById('metricsRow');
     metricsRow.innerHTML = `
@@ -2019,14 +2194,14 @@ function updateMetrics() {
             <div class="value">${avgTenure.toFixed(1)}</div>
             <div class="label">⏱️ 平均司龄(年)</div>
         </div>
-        <div class="metric-card ${warningCount > 0 ? 'warning' : ''}">
+        <div class="metric-card ${warningCount > 0 ? 'warning' : ''}" onclick="showWarningPopup()" style="cursor: pointer;" title="点击查看预警人员详情">
             <div class="value">${warningCount}</div>
             <div class="label">⚠️ 人才流失预警</div>
         </div>
     `;
 }
 
-// ========== 学历分布饼图（按最高学历性质分组） ==========
+// ========== 学历分布饼图（按最高学历分三档：专科、本科、研究生） ==========
 function updateEduChart() {
     const canvas = document.getElementById('eduChart');
     const ctx = canvas.getContext('2d');
@@ -2036,15 +2211,15 @@ function updateEduChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
-    // 按最高学历性质归类
+    // 按最高学历层次归类（只分三档：专科、本科、研究生）
     const eduCount = {};
     filteredEmployees.forEach(e => {
-        const category = classifyEduNature(e['最高学历性质']);
+        const category = classifyEduLevel(e['最高学历']);
         eduCount[category] = (eduCount[category] || 0) + 1;
     });
     
-    // 按人数排序，固定顺序优先
-    const sortOrder = ['统招985/211', '统招普通院校', '非统招', '统招专科', '未知'];
+    // 固定顺序：研究生、本科、专科、其他、未知
+    const sortOrder = ['研究生', '本科', '专科', '其他', '未知'];
     const data = Object.entries(eduCount).sort((a, b) => {
         const ia = sortOrder.indexOf(a[0]);
         const ib = sortOrder.indexOf(b[0]);
@@ -2684,6 +2859,45 @@ function closeGridPopup() {
     document.body.style.overflow = '';
 }
 
+// ========== 预警弹窗功能 ==========
+function showWarningPopup() {
+    const employees = window._warningEmployees || [];
+    const popup = document.getElementById('warningPopup');
+    const contentDiv = document.getElementById('warningContent');
+    
+    if (employees.length === 0) {
+        contentDiv.innerHTML = '<div class="warning-empty">暂无预警人员</div>';
+    } else {
+        let html = '<table class="warning-table"><thead><tr>' +
+            '<th>姓名</th><th>工号</th><th>部门</th><th>岗位</th><th>最近绩效</th><th>盘点结果</th>' +
+            '</tr></thead><tbody>';
+        
+        employees.forEach(e => {
+            const latestPerf = getLatestPerf(e);
+            const cat = e['2025盘点结果'] || e['2024盘点结果'] || '';
+            html += '<tr onclick="closeWarningPopup();showEmployeeDetail(\'' + e['工号'] + '\')">' +
+                '<td class="emp-name">' + e['姓名'] + '</td>' +
+                '<td>' + e['工号'] + '</td>' +
+                '<td>' + e['一级部门'] + '</td>' +
+                '<td>' + e['岗位'] + '</td>' +
+                '<td class="perf-cd">' + (latestPerf || '-') + '</td>' +
+                '<td class="assessment-low">' + cat + '</td>' +
+                '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        contentDiv.innerHTML = html;
+    }
+    
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeWarningPopup() {
+    document.getElementById('warningPopup').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
 // 移动端：点击弹窗外部关闭
 document.addEventListener('DOMContentLoaded', () => {
     const gridPopup = document.getElementById('gridPopup');
@@ -2693,10 +2907,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // 预警弹窗外部点击关闭
+    const warningPopup = document.getElementById('warningPopup');
+    if (warningPopup) {
+        warningPopup.addEventListener('click', (e) => {
+            if (e.target === warningPopup) {
+                closeWarningPopup();
+            }
+        });
+    }
+    
     // ESC键关闭弹窗
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeGridPopup();
+            closeWarningPopup();
         }
     });
 });
@@ -2719,13 +2944,21 @@ function showEmployeeDetail(empId) {
         updateMobileButtons();
     }
     
-    // 从身份证号提取性别和年龄
+    // 从身份证号自动计算性别、出生年月、年龄（优先使用自动计算值）
     const idCard = emp['身份证号'] || '';
-    const gender = getGenderFromId(idCard) || emp['性别'] || '未知';
-    const birthDate = getBirthFromId(idCard) || emp['出生年月'] || '';
-    const age = getAgeFromId(idCard);
+    const autoGender = getGenderFromId(idCard);
+    const autoBirthDate = getBirthFromId(idCard);
+    // 优先使用自动计算值，CSV中的值为空或"/"时也使用自动计算
+    const gender = (autoGender && autoGender !== '未知') ? autoGender : 
+                   (emp['性别'] && emp['性别'] !== '/' && emp['性别'] !== '') ? emp['性别'] : '未知';
+    const birthDate = autoBirthDate ? autoBirthDate : 
+                      (emp['出生年月'] && emp['出生年月'] !== '/' && emp['出生年月'] !== '') ? emp['出生年月'] : '';
+    const age = birthDate ? calcAge(birthDate) : '';
     
-    // 计算司龄
+    // 计算司龄和工龄（显示为"X年X月"格式，优先自动计算）
+    const tenureDisplay = calcYearsMonths(emp['入职日期']) || ((emp['司龄'] && emp['司龄'] !== '/' && emp['司龄'] !== '') ? emp['司龄'] : '-');
+    const workYearsDisplay = calcYearsMonths(emp['参加工作时间']) || ((emp['工龄'] && emp['工龄'] !== '/' && emp['工龄'] !== '') ? emp['工龄'] : '-');
+    // 保留小数版本用于其他计算
     const tenure = calcYears(emp['入职日期']);
     const workYears = calcYears(emp['参加工作时间']);
     
@@ -2744,14 +2977,14 @@ function showEmployeeDetail(empId) {
         <div class="info-item highlight"><div class="label">工号</div><div class="value">${emp['工号']}</div></div>
         <div class="info-item highlight"><div class="label">姓名</div><div class="value">${emp['姓名']}</div></div>
         <div class="info-item"><div class="label">性别</div><div class="value">${gender}</div></div>
-        <div class="info-item"><div class="label">年龄</div><div class="value">${age}岁</div></div>
+        <div class="info-item"><div class="label">年龄</div><div class="value">${age !== '' ? age + '岁' : '-'}</div></div>
         <div class="info-item"><div class="label">民族</div><div class="value">${emp['民族']}</div></div>
         <div class="info-item"><div class="label">一级部门</div><div class="value">${emp['一级部门']}</div></div>
         <div class="info-item"><div class="label">二级部门</div><div class="value">${emp['二级部门']}</div></div>
         <div class="info-item"><div class="label">岗位</div><div class="value">${emp['岗位']}</div></div>
         <div class="info-item highlight"><div class="label">职级</div><div class="value">${emp['职级']}${isManagement(emp['职级']) ? '（管理层）' : ''}</div></div>
         <div class="info-item"><div class="label">最高学历</div><div class="value">${eduDisplay}</div></div>
-        <div class="info-item"><div class="label">司龄</div><div class="value">${tenure}年</div></div>
+        <div class="info-item"><div class="label">司龄</div><div class="value">${tenureDisplay}</div></div>
         <div class="info-item ${emp['状态'] === '离职' ? 'warning' : ''}"><div class="label">状态</div><div class="value">${emp['状态']}</div></div>
     `;
     
@@ -2759,9 +2992,9 @@ function showEmployeeDetail(empId) {
     let workInfoHtml = `
         <div class="info-item"><div class="label">劳动合同Base地</div><div class="value">${emp['劳动合同Base地']}</div></div>
         <div class="info-item"><div class="label">参加工作时间</div><div class="value">${emp['参加工作时间']}</div></div>
-        <div class="info-item"><div class="label">工龄</div><div class="value">${workYears}年</div></div>
+        <div class="info-item"><div class="label">工龄</div><div class="value">${workYearsDisplay}</div></div>
         <div class="info-item"><div class="label">入职日期</div><div class="value">${emp['入职日期']}</div></div>
-        <div class="info-item"><div class="label">司龄</div><div class="value">${tenure}年</div></div>
+        <div class="info-item"><div class="label">司龄</div><div class="value">${tenureDisplay}</div></div>
         <div class="info-item"><div class="label">合同到期日</div><div class="value">${emp['合同到期日']}</div></div>
         <div class="info-item"><div class="label">婚育状态</div><div class="value">${emp['婚育状态']}</div></div>
     `;
