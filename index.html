@@ -855,9 +855,95 @@
                 }
             }
         }
+
+        /* ========== 数据加载覆盖层 ========== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d1f3c 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease;
+        }
+        .loading-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 212, 255, 0.2);
+            border-top: 4px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            margin-top: 24px;
+            font-size: 18px;
+            color: #8fa8c8;
+            letter-spacing: 2px;
+        }
+        .loading-error {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+        .loading-error .error-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .loading-error .error-title {
+            font-size: 22px;
+            color: #ff6b6b;
+            margin-bottom: 12px;
+        }
+        .loading-error .error-msg {
+            font-size: 14px;
+            color: #8fa8c8;
+            line-height: 1.8;
+            max-width: 400px;
+        }
+        .loading-error .retry-btn {
+            margin-top: 24px;
+            padding: 12px 36px;
+            border-radius: 25px;
+            border: 1px solid #00d4ff;
+            background: rgba(0, 180, 255, 0.15);
+            color: #00d4ff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .loading-error .retry-btn:hover {
+            background: rgba(0, 180, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
+        }
     </style>
 </head>
 <body>
+    <!-- 数据加载覆盖层 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner" id="loadingSpinner"></div>
+        <div class="loading-text" id="loadingText">数据加载中...</div>
+        <div class="loading-error" id="loadingError">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">数据加载失败</div>
+            <div class="error-msg" id="errorMsg">无法读取数据文件，请确保 employee_data.csv 和 employee_changes.csv 文件与页面位于同一目录下。</div>
+            <button class="retry-btn" onclick="loadData()">重新加载</button>
+        </div>
+    </div>
+
     <div class="dashboard">
         <!-- 全局搜索容器 -->
         <div class="search-box" style="position: relative;">
@@ -1040,26 +1126,87 @@ function parseTalentGrid(text) {
 }
 
 function parseCSV(csv) {
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',');
-    const data = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
-        const row = {};
-        headers.forEach((h, idx) => row[h.trim()] = values[idx]?.trim() || '');
-        data.push(row);
+    // 去除UTF-8 BOM头（如果存在）
+    if (csv.charCodeAt(0) === 0xFEFF) {
+        csv = csv.slice(1);
     }
-    return data;
-}
+    csv = csv.trim();
 
-function parseChangeCSV(csv) {
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',');
+    /**
+     * 健壮的CSV行解析器
+     * 支持引号包裹字段、字段内逗号、字段内换行、字段内转义引号（""）
+     */
+    function parseCSVLines(text) {
+        const rows = [];
+        let currentRow = [];
+        let currentField = '';
+        let inQuotes = false;
+        let i = 0;
+
+        while (i < text.length) {
+            const ch = text[i];
+
+            if (inQuotes) {
+                if (ch === '"') {
+                    // 检查是否为转义引号 ""
+                    if (i + 1 < text.length && text[i + 1] === '"') {
+                        currentField += '"';
+                        i += 2;
+                    } else {
+                        // 结束引号
+                        inQuotes = false;
+                        i++;
+                    }
+                } else {
+                    currentField += ch;
+                    i++;
+                }
+            } else {
+                if (ch === '"') {
+                    inQuotes = true;
+                    i++;
+                } else if (ch === ',') {
+                    currentRow.push(currentField.trim());
+                    currentField = '';
+                    i++;
+                } else if (ch === '\r') {
+                    // 跳过 \r（处理 \r\n 和 \r 换行）
+                    i++;
+                } else if (ch === '\n') {
+                    currentRow.push(currentField.trim());
+                    currentField = '';
+                    rows.push(currentRow);
+                    currentRow = [];
+                    i++;
+                } else {
+                    currentField += ch;
+                    i++;
+                }
+            }
+        }
+
+        // 处理最后一行（可能没有换行结尾）
+        if (currentField !== '' || currentRow.length > 0) {
+            currentRow.push(currentField.trim());
+            rows.push(currentRow);
+        }
+
+        return rows;
+    }
+
+    const rows = parseCSVLines(csv);
+    if (rows.length < 2) return [];
+
+    const headers = rows[0];
     const data = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
+    for (let i = 1; i < rows.length; i++) {
+        const values = rows[i];
+        // 跳过空行
+        if (values.length === 1 && values[0] === '') continue;
         const row = {};
-        headers.forEach((h, idx) => row[h.trim()] = values[idx]?.trim() || '');
+        headers.forEach((h, idx) => {
+            row[h] = values[idx] || '';
+        });
         data.push(row);
     }
     return data;
@@ -1067,25 +1214,65 @@ function parseChangeCSV(csv) {
 
 // ========== 数据加载 ==========
 async function loadData() {
+    const overlay = document.getElementById('loadingOverlay');
+    const spinner = document.getElementById('loadingSpinner');
+    const loadText = document.getElementById('loadingText');
+    const errorDiv = document.getElementById('loadingError');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // 重置为加载状态
+    overlay.classList.remove('fade-out');
+    spinner.style.display = '';
+    loadText.style.display = '';
+    errorDiv.style.display = 'none';
+    loadText.textContent = '数据加载中...';
+
     try {
-        // 加载员工主表
-        const empResponse = await fetch('employee_data.csv');
-        const empText = await empResponse.text();
+        // 并行加载两个CSV文件
+        const [empResponse, changesResponse] = await Promise.all([
+            fetch('employee_data.csv'),
+            fetch('employee_changes.csv')
+        ]);
+
+        if (!empResponse.ok) {
+            throw new Error(`员工数据文件加载失败 (HTTP ${empResponse.status})`);
+        }
+        if (!changesResponse.ok) {
+            throw new Error(`异动数据文件加载失败 (HTTP ${changesResponse.status})`);
+        }
+
+        loadText.textContent = '正在解析数据...';
+
+        const [empText, changesText] = await Promise.all([
+            empResponse.text(),
+            changesResponse.text()
+        ]);
+
         allEmployees = parseCSV(empText);
-        
-        // 加载异动明细表
-        const changesResponse = await fetch('employee_changes.csv');
-        const changesText = await changesResponse.text();
-        allChanges = parseChangeCSV(changesText);
-        
+        allChanges = parseCSV(changesText);
+
+        if (allEmployees.length === 0) {
+            throw new Error('员工数据为空，请检查 employee_data.csv 文件内容');
+        }
+
         // 初始化
         filteredEmployees = [...allEmployees];
         updateDateDisplay();
         updateDashboard();
         initSearch();
+
+        // 淡出加载层
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 500);
+
     } catch (error) {
         console.error('数据加载失败:', error);
-        document.body.innerHTML = '<div style="color:#fff;text-align:center;padding:50px;">数据加载失败，请确保 employee_data.csv 和 employee_changes.csv 文件存在</div>';
+        spinner.style.display = 'none';
+        loadText.style.display = 'none';
+        errorDiv.style.display = 'flex';
+        errorMsg.textContent = error.message || '无法读取数据文件，请确保 employee_data.csv 和 employee_changes.csv 文件与页面位于同一目录下。';
     }
 }
 
