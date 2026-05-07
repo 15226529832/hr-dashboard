@@ -1410,7 +1410,7 @@
         <div class="loading-error" id="loadingError">
             <div class="error-icon">⚠️</div>
             <div class="error-title">数据加载失败</div>
-            <div class="error-msg" id="errorMsg">无法读取数据文件，请确保 employee_data.csv 和 employee_changes.csv 文件与页面位于同一目录下。</div>
+            <div class="error-msg" id="errorMsg">无法读取数据文件，请确保 employee_data.csv 文件与页面位于同一目录下。</div>
             <button class="retry-btn" onclick="loadData()">重新加载</button>
         </div>
     </div>
@@ -1571,7 +1571,7 @@
     <div class="grid-popup" id="gridPopup">
         <div class="grid-popup-content">
             <button class="grid-popup-close" onclick="closeGridPopup()">×</button>
-            <h3 id="gridPopupTitle">高绩效-高潜力</h3>
+            <h3 id="gridPopupTitle">人才分类</h3>
             <div class="grid-popup-list" id="gridPopupList"></div>
         </div>
     </div>
@@ -1654,7 +1654,6 @@ document.getElementById('loginPassword').addEventListener('keydown', function(e)
 // 员工主表数据将通过fetch加载
 let allEmployees = [];
 let filteredEmployees = [];
-let allChanges = [];  // 异动明细表数据
 let currentDept = '';
 let currentEmployee = null;
 
@@ -1691,13 +1690,34 @@ function getGradeScore(grade) {
     return scores[grade] || 0;
 }
 
-function parseTalentGrid(text) {
-    if (!text) return { perf: '中', pot: '中' };
-    const parts = text.split('-');
-    return {
-        perf: parts[0].replace('绩效', ''),
-        pot: parts[1].replace('潜力', '')
-    };
+// 九宫格分类名称到坐标位置的映射
+// 纵轴(行)：0=潜力前20%, 1=潜力20%-90%, 2=潜力后10%
+// 横轴(列)：0=绩效后10%, 1=绩效20%-90%, 2=绩效前20%
+const GRID_POSITIONS = [
+    ['待发展员工', '潜力之星', '明星员工'],   // 潜力前20%
+    ['差距员工',   '稳定贡献者', '绩效之星'],  // 潜力20%-90%
+    ['问题员工',   '胜任员工',   '熟练员工']    // 潜力后10%
+];
+
+const GRID_COLORS = {
+    '明星员工': '#1a5276',
+    '潜力之星': '#1e8449',
+    '待发展员工': '#5dade2',
+    '绩效之星': '#1e8449',
+    '稳定贡献者': '#5dade2',
+    '差距员工': '#e67e22',
+    '熟练员工': '#5dade2',
+    '胜任员工': '#e67e22',
+    '问题员工': '#e74c3c'
+};
+
+function getGridPosition(category) {
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            if (GRID_POSITIONS[r][c] === category) return { row: r, col: c };
+        }
+    }
+    return null;
 }
 
 function parseCSV(csv) {
@@ -1803,28 +1823,18 @@ async function loadData() {
     loadText.textContent = '数据加载中...';
 
     try {
-        // 并行加载两个CSV文件
-        const [empResponse, changesResponse] = await Promise.all([
-            fetch('employee_data.csv'),
-            fetch('employee_changes.csv')
-        ]);
+        // 加载CSV数据文件
+        const empResponse = await fetch('employee_data.csv');
 
         if (!empResponse.ok) {
             throw new Error(`员工数据文件加载失败 (HTTP ${empResponse.status})`);
         }
-        if (!changesResponse.ok) {
-            throw new Error(`异动数据文件加载失败 (HTTP ${changesResponse.status})`);
-        }
 
         loadText.textContent = '正在解析数据...';
 
-        const [empText, changesText] = await Promise.all([
-            empResponse.text(),
-            changesResponse.text()
-        ]);
+        const empText = await empResponse.text();
 
         allEmployees = parseCSV(empText);
-        allChanges = parseCSV(changesText);
 
         if (allEmployees.length === 0) {
             throw new Error('员工数据为空，请检查 employee_data.csv 文件内容');
@@ -1850,7 +1860,7 @@ async function loadData() {
         spinner.style.display = 'none';
         loadText.style.display = 'none';
         errorDiv.style.display = 'flex';
-        errorMsg.textContent = error.message || '无法读取数据文件，请确保 employee_data.csv 和 employee_changes.csv 文件与页面位于同一目录下。';
+        errorMsg.textContent = error.message || '无法读取数据文件，请确保 employee_data.csv 文件与页面位于同一目录下。';
     }
 }
 
@@ -1902,8 +1912,9 @@ function updateMetrics() {
     filteredEmployees.forEach(e => {
         const q3 = e['2024Q3'];
         const q4 = e['2024Q4'];
-        const grid = parseTalentGrid(e['2025盘点结果']);
-        if ((q3 === 'C' || q3 === 'D' || q4 === 'C' || q4 === 'D') && grid.pot === '低') {
+        const cat2025 = e['2025盘点结果'];
+        const isLowPot = cat2025 === '熟练员工' || cat2025 === '胜任员工' || cat2025 === '问题员工';
+        if ((q3 === 'C' || q3 === 'D' || q4 === 'C' || q4 === 'D') && isLowPot) {
             warningCount++;
         }
     });
@@ -2418,19 +2429,14 @@ function updateTalentGridChart() {
     canvas.height = canvas.parentElement.offsetHeight * dpr;
     ctx.scale(dpr, dpr);
     
+    // 统计每个分类的人数
     const grid = {};
-    const positions = [
-        ['高绩效-高潜力', '高绩效-中潜力', '高绩效-低潜力'],
-        ['中绩效-高潜力', '中绩效-中潜力', '中绩效-低潜力'],
-        ['低绩效-高潜力', '低绩效-中潜力', '低绩效-低潜力']
-    ];
-    
-    positions.forEach(row => {
-        row.forEach(pos => {
-            grid[pos] = [];
+    GRID_POSITIONS.forEach(row => {
+        row.forEach(cat => {
+            grid[cat] = [];
             filteredEmployees.forEach(e => {
-                if (e['2025盘点结果'] === pos) {
-                    grid[pos].push(e);
+                if (e['2025盘点结果'] === cat) {
+                    grid[cat].push(e);
                 }
             });
         });
@@ -2438,40 +2444,36 @@ function updateTalentGridChart() {
     
     const w = canvas.width / dpr;
     const h = canvas.height / dpr;
-    const padding = { top: 60, right: 20, bottom: 50, left: 80 };
+    const padding = { top: 60, right: 20, bottom: 55, left: 95 };
     const cellW = (w - padding.left - padding.right) / 3;
     const cellH = (h - padding.top - padding.bottom) / 3;
     
-    const colorMap = {
-        '高绩效-高潜力': '#00ff88',
-        '高绩效-中潜力': '#00d4ff',
-        '高绩效-低潜力': '#45b7d1',
-        '中绩效-高潜力': '#96ceb4',
-        '中绩效-中潜力': '#ffd93d',
-        '中绩效-低潜力': '#ffa500',
-        '低绩效-高潜力': '#ff8844',
-        '低绩效-中潜力': '#ff6b6b',
-        '低绩效-低潜力': '#c0392b'
-    };
-    
-    positions.forEach((row, ri) => {
-        row.forEach((pos, pi) => {
-            const x = padding.left + pi * cellW;
+    // 绘制九宫格
+    GRID_POSITIONS.forEach((row, ri) => {
+        row.forEach((cat, ci) => {
+            const x = padding.left + ci * cellW;
             const y = padding.top + ri * cellH;
-            const count = grid[pos].length;
+            const count = grid[cat].length;
+            const color = GRID_COLORS[cat];
             
-            ctx.fillStyle = colorMap[pos] + '40';
-            ctx.strokeStyle = colorMap[pos];
+            // 填充背景
+            ctx.fillStyle = color + '40';
+            ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.roundRect(x + 5, y + 5, cellW - 10, cellH - 10, 10);
             ctx.fill();
             ctx.stroke();
             
-            ctx.fillStyle = colorMap[pos];
-            ctx.font = 'bold 28px Microsoft YaHei';
+            // 分类名称
+            ctx.fillStyle = color;
+            ctx.font = 'bold 13px Microsoft YaHei';
             ctx.textAlign = 'center';
-            ctx.fillText(count, x + cellW / 2, y + cellH / 2 + 5);
+            ctx.fillText(cat, x + cellW / 2, y + cellH / 2 - 10);
+            
+            // 人数
+            ctx.font = 'bold 24px Microsoft YaHei';
+            ctx.fillText(count, x + cellW / 2, y + cellH / 2 + 18);
         });
     });
     
@@ -2481,14 +2483,14 @@ function updateTalentGridChart() {
         const clickX = clientX - rect.left;
         const clickY = clientY - rect.top;
         
-        positions.forEach((row, ri) => {
-            row.forEach((pos, pi) => {
-                const x = padding.left + pi * cellW;
+        GRID_POSITIONS.forEach((row, ri) => {
+            row.forEach((cat, ci) => {
+                const x = padding.left + ci * cellW;
                 const y = padding.top + ri * cellH;
                 
                 if (clickX >= x && clickX <= x + cellW && clickY >= y && clickY <= y + cellH) {
-                    if (grid[pos].length > 0) {
-                        showGridPopup(pos, grid[pos]);
+                    if (grid[cat].length > 0) {
+                        showGridPopup(cat, grid[cat]);
                     }
                 }
             });
@@ -2507,24 +2509,31 @@ function updateTalentGridChart() {
         }
     };
     
+    // 纵轴标签（潜力，从上到下）
     ctx.fillStyle = '#00d4ff';
-    ctx.font = 'bold 14px Microsoft YaHei';
+    ctx.font = 'bold 11px Microsoft YaHei';
     ctx.textAlign = 'center';
-    ['高绩效', '中绩效', '低绩效'].forEach((label, i) => {
-        ctx.fillText(label, 25, padding.top + cellH * i + cellH / 2 + 5);
+    ['潜力前20%', '潜力20%-90%', '潜力后10%'].forEach((label, i) => {
+        ctx.save();
+        ctx.translate(25, padding.top + cellH * i + cellH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
     });
     
+    // 横轴标签（绩效，从左到右）
     ctx.fillStyle = '#00d4ff';
-    ['低潜力', '中潜力', '高潜力'].forEach((label, i) => {
-        ctx.fillText(label, padding.left + cellW * i + cellW / 2, h - 15);
+    ['绩效后10%', '绩效20%-90%', '绩效前20%'].forEach((label, i) => {
+        ctx.fillText(label, padding.left + cellW * i + cellW / 2, h - 12);
     });
     
-    ctx.font = 'bold 12px Microsoft YaHei';
-    ctx.fillText('→ 潜力', w - 50, h - 20);
+    // 轴方向标注
+    ctx.font = 'bold 11px Microsoft YaHei';
+    ctx.fillText('→ 绩效', w - 50, h - 25);
     ctx.save();
-    ctx.translate(20, h / 2);
+    ctx.translate(10, h / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText('绩效 ↑', 0, 0);
+    ctx.fillText('潜力 ↑', 0, 0);
     ctx.restore();
 }
 
@@ -2660,8 +2669,30 @@ function showEmployeeDetail(empId) {
 function renderTimeline(empId) {
     const timelineContent = document.getElementById('timelineContent');
     
-    // 从异动表获取该员工的所有异动记录
-    const empChanges = allChanges.filter(c => c['工号'] === empId);
+    // 从员工数据的异动记录字段解析
+    const emp = allEmployees.find(e => e['工号'] === empId);
+    if (!emp || !emp['异动记录']) {
+        timelineContent.innerHTML = '<div class="timeline-empty">暂无异动记录</div>';
+        return;
+    }
+    
+    // 解析异动记录: 用 | 分隔多次异动，每次用 ; 分隔字段
+    const changeStr = emp['异动记录'];
+    const empChanges = [];
+    changeStr.split('|').forEach(part => {
+        const fields = part.split(';');
+        if (fields.length >= 7) {
+            empChanges.push({
+                '异动日期': fields[0],
+                '异动类型': fields[1],
+                '异动前部门': fields[2],
+                '异动后部门': fields[3],
+                '异动前岗位': fields[4],
+                '异动后岗位': fields[5],
+                '备注': fields[6]
+            });
+        }
+    });
     
     if (empChanges.length === 0) {
         timelineContent.innerHTML = '<div class="timeline-empty">暂无异动记录</div>';
@@ -2826,80 +2857,107 @@ function updateTalentCompareChart(emp) {
     
     const w = canvas.width / dpr;
     const h = canvas.height / dpr;
-    const padding = { top: 40, right: 40, bottom: 60, left: 80 };
+    const padding = { top: 40, right: 40, bottom: 65, left: 95 };
     const cellW = (w - padding.left - padding.right) / 3;
     const cellH = (h - padding.top - padding.bottom) / 3;
     
-    const grid2024 = parseTalentGrid(emp['2024盘点结果']);
-    const grid2025 = parseTalentGrid(emp['2025盘点结果']);
+    // 获取2024和2025的九宫格位置
+    const pos2024 = getGridPosition(emp['2024盘点结果']);
+    const pos2025 = getGridPosition(emp['2025盘点结果']);
     
-    const perfIndex = { '高': 0, '中': 1, '低': 2 };
-    const potIndex = { '低': 0, '中': 1, '高': 2 };
-    
-    for (let pi = 0; pi < 3; pi++) {
-        for (let ti = 0; ti < 3; ti++) {
-            const x = padding.left + ti * cellW;
-            const y = padding.top + pi * cellH;
+    // 绘制九宫格背景和分类名称
+    for (let ri = 0; ri < 3; ri++) {
+        for (let ci = 0; ci < 3; ci++) {
+            const x = padding.left + ci * cellW;
+            const y = padding.top + ri * cellH;
+            const cat = GRID_POSITIONS[ri][ci];
+            const color = GRID_COLORS[cat];
             
             ctx.strokeStyle = 'rgba(0,212,255,0.3)';
             ctx.lineWidth = 1;
             ctx.strokeRect(x, y, cellW, cellH);
             
-            if (pi === perfIndex[grid2024.perf] && ti === potIndex[grid2024.pot]) {
-                ctx.fillStyle = 'rgba(0,180,255,0.3)';
-                ctx.fillRect(x + 5, y + 5, cellW - 10, cellH - 10);
-                ctx.fillStyle = '#00d4ff';
-                ctx.font = 'bold 12px Microsoft YaHei';
-                ctx.textAlign = 'center';
-                ctx.fillText('2024', x + cellW / 2, y + cellH / 2);
-            }
+            // 填充分类底色
+            ctx.fillStyle = color + '18';
+            ctx.fillRect(x + 2, y + 2, cellW - 4, cellH - 4);
             
-            if (pi === perfIndex[grid2025.perf] && ti === potIndex[grid2025.pot]) {
-                ctx.fillStyle = 'rgba(0,255,136,0.3)';
-                ctx.fillRect(x + 10, y + 10, cellW - 20, cellH - 20);
-                ctx.fillStyle = '#00ff88';
-                ctx.font = 'bold 12px Microsoft YaHei';
-                ctx.textAlign = 'center';
-                ctx.fillText('2025', x + cellW / 2, y + cellH / 2);
-            }
+            // 分类名称
+            ctx.fillStyle = color + '80';
+            ctx.font = '10px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.fillText(cat, x + cellW / 2, y + cellH / 2 - 8);
         }
     }
     
-    const x2024 = padding.left + potIndex[grid2024.pot] * cellW + cellW / 2;
-    const y2024 = padding.top + perfIndex[grid2024.perf] * cellH + cellH / 2;
+    // 标记2024位置
+    if (pos2024) {
+        const x = padding.left + pos2024.col * cellW;
+        const y = padding.top + pos2024.row * cellH;
+        ctx.fillStyle = 'rgba(0,180,255,0.3)';
+        ctx.fillRect(x + 5, y + 5, cellW - 10, cellH - 10);
+        ctx.fillStyle = '#00d4ff';
+        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('2024', x + cellW / 2, y + cellH / 2 + 6);
+    }
     
-    const x2025 = padding.left + potIndex[grid2025.pot] * cellW + cellW / 2;
-    const y2025 = padding.top + perfIndex[grid2025.perf] * cellH + cellH / 2;
+    // 标记2025位置
+    if (pos2025) {
+        const x = padding.left + pos2025.col * cellW;
+        const y = padding.top + pos2025.row * cellH;
+        ctx.fillStyle = 'rgba(0,255,136,0.3)';
+        ctx.fillRect(x + 10, y + 10, cellW - 20, cellH - 20);
+        ctx.fillStyle = '#00ff88';
+        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.textAlign = 'center';
+        ctx.fillText('2025', x + cellW / 2, y + cellH / 2 + 6);
+    }
     
-    ctx.beginPath();
-    ctx.moveTo(x2024, y2024);
-    ctx.lineTo(x2025, y2025);
-    ctx.strokeStyle = '#ffa500';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // 绘制移动箭头
+    if (pos2024 && pos2025) {
+        const x2024 = padding.left + pos2024.col * cellW + cellW / 2;
+        const y2024 = padding.top + pos2024.row * cellH + cellH / 2;
+        const x2025 = padding.left + pos2025.col * cellW + cellW / 2;
+        const y2025 = padding.top + pos2025.row * cellH + cellH / 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(x2024, y2024);
+        ctx.lineTo(x2025, y2025);
+        ctx.strokeStyle = '#ffa500';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
     
+    // 纵轴标签（潜力）
     ctx.fillStyle = '#00d4ff';
-    ctx.font = 'bold 12px Microsoft YaHei';
+    ctx.font = 'bold 10px Microsoft YaHei';
     ctx.textAlign = 'center';
-    ['高绩效', '中绩效', '低绩效'].forEach((label, i) => {
-        ctx.fillText(label, 25, padding.top + cellH * i + cellH / 2 + 4);
+    ['潜力前20%', '潜力20%-90%', '潜力后10%'].forEach((label, i) => {
+        ctx.save();
+        ctx.translate(22, padding.top + cellH * i + cellH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
     });
     
-    ['低潜力', '中潜力', '高潜力'].forEach((label, i) => {
-        ctx.fillText(label, padding.left + cellW * i + cellW / 2, h - 25);
+    // 横轴标签（绩效）
+    ['绩效后10%', '绩效20%-90%', '绩效前20%'].forEach((label, i) => {
+        ctx.fillText(label, padding.left + cellW * i + cellW / 2, h - 20);
     });
     
+    // 图例
     ctx.fillStyle = '#00d4ff';
-    ctx.fillRect(w - 130, 15, 12, 12);
+    ctx.fillRect(w - 140, 12, 12, 12);
     ctx.fillStyle = '#fff';
     ctx.font = '11px Microsoft YaHei';
-    ctx.fillText('2024年', w - 112, 25);
+    ctx.textAlign = 'left';
+    ctx.fillText('2024: ' + (emp['2024盘点结果'] || '无'), w - 125, 22);
     
     ctx.fillStyle = '#00ff88';
-    ctx.fillRect(w - 70, 15, 12, 12);
-    ctx.fillText('2025年', w - 52, 25);
+    ctx.fillRect(w - 140, 30, 12, 12);
+    ctx.fillText('2025: ' + (emp['2025盘点结果'] || '无'), w - 125, 40);
 }
 
 // ========== 搜索功能 ==========
