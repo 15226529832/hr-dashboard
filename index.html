@@ -1770,6 +1770,22 @@
         </div>
     </div>
 
+    <div class="warning-popup" id="joinPopup">
+        <div class="warning-popup-content">
+            <button class="warning-popup-close" onclick="closeJoinPopup()">&times;</button>
+            <h3>📥 本月入职人员</h3>
+            <div id="joinContent"></div>
+        </div>
+    </div>
+
+    <div class="warning-popup" id="leavePopup">
+        <div class="warning-popup-content">
+            <button class="warning-popup-close" onclick="closeLeavePopup()">&times;</button>
+            <h3>📤 本月离职人员</h3>
+            <div id="leaveContent"></div>
+        </div>
+    </div>
+
 <script>
 // ========== 密码验证模块 ==========
 const PASSWORD_HASH = '6e102fc7676960990eb3c2212b028767e112abf3e761928c4fed33f54e791300';
@@ -2284,11 +2300,11 @@ function updateMetrics() {
             <div class="value">${totalCount}</div>
             <div class="label">👥 在职总人数</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" onclick="showJoinPopup()" style="cursor:pointer;" title="点击查看出职人员详情">
             <div class="value">${thisMonthJoin}</div>
             <div class="label">📥 本月入职</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card" onclick="showLeavePopup()" style="cursor:pointer;" title="点击查看离职人员详情">
             <div class="value">${thisMonthLeave}</div>
             <div class="label">📤 本月离职</div>
         </div>
@@ -3000,6 +3016,81 @@ function closeWarningPopup() {
     document.body.style.overflow = '';
 }
 
+function showJoinPopup() {
+    const now = new Date(2025, 2, 15);
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const joinList = filteredEmployees.filter(e => {
+        const d = new Date(e['入职日期']);
+        return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const popup = document.getElementById('joinPopup');
+    const contentDiv = document.getElementById('joinContent');
+    if (joinList.length === 0) {
+        contentDiv.innerHTML = '<div class="warning-empty">本月暂无入职人员</div>';
+    } else {
+        let html = '<table class="warning-table"><thead><tr>' +
+            '<th>姓名</th><th>工号</th><th>部门</th><th>岗位</th><th>入职日期</th>' +
+            '</tr></thead><tbody>';
+        joinList.forEach(e => {
+            html += '<tr onclick="closeJoinPopup();showEmployeeDetail(\'' + e['工号'] + '\')" style="cursor:pointer;">' +
+                '<td class="emp-name">' + e['姓名'] + '</td>' +
+                '<td>' + e['工号'] + '</td>' +
+                '<td>' + (e['一级部门'] || '') + '</td>' +
+                '<td>' + (e['岗位'] || '') + '</td>' +
+                '<td>' + (e['入职日期'] || '-') + '</td>' +
+                '</tr>';
+        });
+        html += '</tbody></table>';
+        contentDiv.innerHTML = html;
+    }
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeJoinPopup() {
+    document.getElementById('joinPopup').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function showLeavePopup() {
+    const now = new Date(2025, 2, 15);
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const leaveList = allEmployees.filter(e => {
+        if (e['状态'] !== '离职' || !e['离职日期']) return false;
+        const d = new Date(e['离职日期']);
+        return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const popup = document.getElementById('leavePopup');
+    const contentDiv = document.getElementById('leaveContent');
+    if (leaveList.length === 0) {
+        contentDiv.innerHTML = '<div class="warning-empty">本月暂无离职人员</div>';
+    } else {
+        let html = '<table class="warning-table"><thead><tr>' +
+            '<th>姓名</th><th>工号</th><th>部门</th><th>岗位</th><th>离职日期</th>' +
+            '</tr></thead><tbody>';
+        leaveList.forEach(e => {
+            html += '<tr style="cursor:default;">' +
+                '<td class="emp-name">' + e['姓名'] + '</td>' +
+                '<td>' + e['工号'] + '</td>' +
+                '<td>' + (e['一级部门'] || '') + '</td>' +
+                '<td>' + (e['岗位'] || '') + '</td>' +
+                '<td>' + (e['离职日期'] || '-') + '</td>' +
+                '</tr>';
+        });
+        html += '</tbody></table>';
+        contentDiv.innerHTML = html;
+    }
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLeavePopup() {
+    document.getElementById('leavePopup').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
 // 移动端：点击弹窗外部关闭
 document.addEventListener('DOMContentLoaded', () => {
     const gridPopup = document.getElementById('gridPopup');
@@ -3019,11 +3110,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // 入职弹窗外部点击关闭
+    const joinPopup = document.getElementById('joinPopup');
+    if (joinPopup) {
+        joinPopup.addEventListener('click', (e) => {
+            if (e.target === joinPopup) {
+                closeJoinPopup();
+            }
+        });
+    }
+    
+    // 离职弹窗外部点击关闭
+    const leavePopup = document.getElementById('leavePopup');
+    if (leavePopup) {
+        leavePopup.addEventListener('click', (e) => {
+            if (e.target === leavePopup) {
+                closeLeavePopup();
+            }
+        });
+    }
+    
     // ESC键关闭弹窗
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeGridPopup();
             closeWarningPopup();
+            closeJoinPopup();
+            closeLeavePopup();
         }
     });
 });
