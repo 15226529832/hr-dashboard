@@ -1272,9 +1272,137 @@
                 height: 200px;
             }
         }
+
+        /* ========== 登录遮罩层样式 ========== */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d1f3c 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100000;
+            transition: opacity 0.5s ease;
+        }
+        .login-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .login-container {
+            width: 400px;
+            padding: 50px 40px;
+            background: linear-gradient(145deg, rgba(20, 40, 80, 0.95), rgba(10, 22, 40, 0.98));
+            border-radius: 20px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 180, 255, 0.1);
+            text-align: center;
+            animation: loginFadeIn 0.8s ease;
+        }
+        @keyframes loginFadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-container .login-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .login-container h2 {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+        .login-input-wrap {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .login-input-wrap input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 180, 255, 0.4);
+            background: rgba(0, 30, 60, 0.8);
+            color: #fff;
+            font-size: 16px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .login-input-wrap input::placeholder {
+            color: #5a7a9a;
+            letter-spacing: 1px;
+        }
+        .login-input-wrap input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 180, 255, 0.3), inset 0 0 10px rgba(0, 180, 255, 0.05);
+            background: rgba(0, 40, 80, 0.9);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #0080ff, #00c8ff);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-btn:hover {
+            background: linear-gradient(135deg, #0099ff, #00d4ff);
+            box-shadow: 0 6px 25px rgba(0, 180, 255, 0.4);
+            transform: translateY(-1px);
+        }
+        .login-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(0, 180, 255, 0.3);
+        }
+        .login-error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 15px;
+            min-height: 20px;
+            transition: opacity 0.3s ease;
+        }
+        .login-error.show {
+            animation: shake 0.4s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .login-footer {
+            margin-top: 25px;
+            color: #4a6a8a;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
+    <!-- 密码登录遮罩层 -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-container">
+            <div class="login-icon">🔐</div>
+            <h2>员工全生命周期管理系统</h2>
+            <div class="login-input-wrap">
+                <input type="password" id="loginPassword" placeholder="请输入访问密码" autocomplete="off" autofocus>
+            </div>
+            <button class="login-btn" id="loginBtn" onclick="handleLogin()">登 录</button>
+            <div class="login-error" id="loginError"></div>
+            <div class="login-footer">本系统仅限授权人员访问</div>
+        </div>
+    </div>
     <!-- 数据加载覆盖层 -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner" id="loadingSpinner"></div>
@@ -1449,6 +1577,79 @@
     </div>
 
 <script>
+// ========== 密码验证模块 ==========
+const PASSWORD_HASH = '6e102fc7676960990eb3c2212b028767e112abf3e761928c4fed33f54e791300';
+let isAuthenticated = false;
+
+// SHA-256 哈希函数（使用 Web Crypto API）
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 处理登录
+async function handleLogin() {
+    const input = document.getElementById('loginPassword');
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    const password = input.value.trim();
+
+    if (!password) {
+        errorEl.textContent = '请输入密码';
+        errorEl.classList.add('show');
+        setTimeout(() => errorEl.classList.remove('show'), 400);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '验证中...';
+
+    try {
+        const hash = await sha256(password);
+        if (hash === PASSWORD_HASH) {
+            isAuthenticated = true;
+            sessionStorage.setItem('hr_dashboard_auth', '1');
+            const overlay = document.getElementById('loginOverlay');
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                loadData(); // 登录成功后才加载数据
+            }, 500);
+        } else {
+            errorEl.textContent = '密码错误，请重试';
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 400);
+            btn.disabled = false;
+            btn.textContent = '登 录';
+            input.focus();
+            input.select();
+        }
+    } catch (e) {
+        errorEl.textContent = '验证失败，请重试';
+        btn.disabled = false;
+        btn.textContent = '登 录';
+    }
+}
+
+// 回车键登录
+document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleLogin();
+    }
+});
+
+// 页面加载时检查登录状态
+(function checkAuth() {
+    if (sessionStorage.getItem('hr_dashboard_auth') === '1') {
+        isAuthenticated = true;
+        const overlay = document.getElementById('loginOverlay');
+        overlay.style.display = 'none';
+    }
+})();
+
 // ========== 数据定义（从CSV读取）==========
 // 员工主表数据将通过fetch加载
 let allEmployees = [];
@@ -2759,7 +2960,12 @@ document.getElementById('deptFilter').addEventListener('change', (e) => {
 });
 
 // ========== 初始化 ==========
-window.addEventListener('load', loadData);
+// 数据加载由密码验证模块控制：未登录时不在load时加载
+window.addEventListener('load', function() {
+    if (isAuthenticated) {
+        loadData();
+    }
+});
 window.addEventListener('resize', () => {
     checkMobileMode();
     if (document.getElementById('mainPage').classList.contains('hidden') === false) {
