@@ -2351,7 +2351,7 @@ function updateEduChart() {
     
     const cx = canvas.width / dpr / 2;
     const cy = canvas.height / dpr / 2;
-    const radius = Math.min(cx, cy) - 40;
+    const radius = Math.max(10, Math.min(cx, cy) - 40);
     
     let startAngle = -Math.PI / 2;
     data.forEach((item, i) => {
