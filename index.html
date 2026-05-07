@@ -2226,8 +2226,8 @@ function populateDeptFilters() {
 // ========== 筛选逻辑 ==========
 function updateDashboard() {
     filteredEmployees = currentDept 
-        ? allEmployees.filter(e => e['一级部门'] === currentDept && e['状态'] === '在职')
-        : allEmployees.filter(e => e['状态'] === '在职');
+        ? allEmployees.filter(e => e['一级部门'] === currentDept && e['状态'] !== '离职')
+        : allEmployees.filter(e => e['状态'] !== '离职');
     
     updateMetrics();
     updateEduChart();
@@ -3780,7 +3780,7 @@ function renderMobileEmployeeList() {
     const container = document.getElementById('mobileCardContainer');
     const countEl = document.getElementById('mobileEmployeeCount');
     
-    let employees = allEmployees.filter(e => e['状态'] === '在职');
+    let employees = allEmployees.filter(e => e['状态'] !== '离职');
     
     // 部门筛选
     if (mobileCurrentDept) {
