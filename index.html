@@ -2554,7 +2554,8 @@
     flex: 1;
     margin-left: 220px;
     padding: 24px;
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 /* 内容页面 */
@@ -3814,17 +3815,30 @@
         <div class="daily-report-content">
             <button class="daily-report-close" onclick="closeDailyReportPopup()">&times;</button>
             <h3 id="dailyReportTitle">📝 日报</h3>
+            <div id="dailyReportSummaryHint" style="display:none;background:#e8f4fd;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#1890ff;"></div>
             <div class="daily-report-section">
                 <label>📊 团队动态（自动生成）</label>
                 <div class="readonly-data" id="dailyReportDynamics"></div>
             </div>
             <div class="daily-report-section">
-                <label>✏️ 今日工作内容</label>
+                <label>✏️ <span id="dailyReportWorkLabel">今日工作内容</span></label>
                 <textarea id="dailyReportWork" placeholder="请输入今日工作内容..."></textarea>
             </div>
             <div class="daily-report-section">
-                <label>📌 明日计划</label>
+                <label>📌 <span id="dailyReportPlanLabel">明日计划</span></label>
                 <textarea id="dailyReportPlan" placeholder="请输入明日计划..."></textarea>
+            </div>
+            <div class="daily-report-section" id="weeklyExtraSection" style="display:none;">
+                <label>⚠️ 需要关注的事项</label>
+                <textarea id="weeklyExtra" placeholder="请输入需要关注的事项..."></textarea>
+            </div>
+            <div class="daily-report-section" id="monthlyExtraSection" style="display:none;">
+                <label>👥 团队人员变动</label>
+                <div class="readonly-data" id="monthlyStaffChange"></div>
+            </div>
+            <div class="daily-report-section" id="monthlyPerfSection" style="display:none;">
+                <label>📈 绩效概况</label>
+                <div class="readonly-data" id="monthlyPerfOverview"></div>
             </div>
             <div class="daily-report-actions">
                 <button class="daily-report-export" onclick="exportDailyReport()">📋 复制到剪贴板</button>
@@ -6426,10 +6440,25 @@ showMainPage = function() {
     if (isMobileMode && document.getElementById('detailPage').classList.contains('mobile-detail')) {
         mobileGoBack();
     } else {
-        originalShowMainPage();
-        // 如果当前在HRBP工作台，切换回全景大屏
-        if (currentPage === 'hrbp') {
-            switchPage('dashboard');
+        // 检查是否从HRBP工作台花名册进入详情
+        var detailSource = sessionStorage.getItem('detail_source');
+        if (detailSource === 'hrbp_roster') {
+            sessionStorage.removeItem('detail_source');
+            // 关闭详情页
+            document.getElementById('detailPage').classList.remove('active');
+            document.getElementById('mainPage').classList.remove('hidden');
+            currentEmployee = null;
+            // 切换回HRBP工作台并显示花名册
+            switchPage('hrbp');
+            setTimeout(function() {
+                switchWsPage('roster');
+            }, 100);
+        } else {
+            originalShowMainPage();
+            // 如果当前在HRBP工作台，切换回全景大屏
+            if (currentPage === 'hrbp') {
+                switchPage('dashboard');
+            }
         }
     }
 };
@@ -6703,12 +6732,13 @@ function renderReportList() {
         return;
     }
     
-    list.innerHTML = reports.slice(0, 10).map(r => `
-        <div class="ws-report-item" onclick="viewReport('${r.id}')">
-            <span class="report-name">${r.type === 'daily' ? '📝' : '📋'} ${r.title}</span>
-            <span class="report-date">${r.date}</span>
-        </div>
-    `).join('');
+    list.innerHTML = reports.slice(0, 10).map(r => {
+        var icon = r.type === 'daily' ? '📝' : (r.type === 'weekly' ? '📋' : '📊');
+        return '<div class="ws-report-item" onclick="viewReport(\'' + r.id + '\')">' +
+            '<span class="report-name">' + icon + ' ' + r.title + '</span>' +
+            '<span class="report-date">' + r.date + '</span>' +
+        '</div>';
+    }).join('');
 }
 function viewReport(id) {
     const reports = getReports();
@@ -6716,11 +6746,23 @@ function viewReport(id) {
     if (!report) return;
     
     document.getElementById('reportViewTitle').textContent = report.title;
-    document.getElementById('reportViewBody').innerHTML = `
-        <div class="rv-section"><div class="rv-label">📊 团队动态</div><div>${report.dynamics || '无'}</div></div>
-        <div class="rv-section"><div class="rv-label">✏️ 工作内容</div><div>${report.work || '无'}</div></div>
-        <div class="rv-section"><div class="rv-label">📌 计划</div><div>${report.plan || '无'}</div></div>
-    `;
+    var html = '';
+    html += '<div class="rv-section"><div class="rv-label">📊 团队动态</div><div>' + (report.dynamics || '无') + '</div></div>';
+    if (report.type === 'weekly') {
+        html += '<div class="rv-section"><div class="rv-label">✏️ 本周工作总结</div><div>' + (report.work || '无') + '</div></div>';
+        html += '<div class="rv-section"><div class="rv-label">📌 下周工作计划</div><div>' + (report.plan || '无') + '</div></div>';
+        if (report.extra) html += '<div class="rv-section"><div class="rv-label">⚠️ 需要关注的事项</div><div>' + report.extra + '</div></div>';
+    } else if (report.type === 'monthly') {
+        html += '<div class="rv-section"><div class="rv-label">✏️ 本月工作总结</div><div>' + (report.work || '无') + '</div></div>';
+        html += '<div class="rv-section"><div class="rv-label">📌 下月工作计划</div><div>' + (report.plan || '无') + '</div></div>';
+        if (report.staffChange) html += '<div class="rv-section"><div class="rv-label">👥 团队人员变动</div><div>' + report.staffChange + '</div></div>';
+        if (report.perfOverview) html += '<div class="rv-section"><div class="rv-label">📈 绩效概况</div><div>' + report.perfOverview + '</div></div>';
+        if (report.extra) html += '<div class="rv-section"><div class="rv-label">⚠️ 需要关注的事项</div><div>' + report.extra + '</div></div>';
+    } else {
+        html += '<div class="rv-section"><div class="rv-label">✏️ 工作内容</div><div>' + (report.work || '无') + '</div></div>';
+        html += '<div class="rv-section"><div class="rv-label">📌 计划</div><div>' + (report.plan || '无') + '</div></div>';
+    }
+    document.getElementById('reportViewBody').innerHTML = html;
     document.getElementById('reportViewPopup').classList.add('active');
 }
 function closeReportViewPopup() {
@@ -6728,89 +6770,407 @@ function closeReportViewPopup() {
 }
 
 // ========== 日报编辑器 ==========
+// 日报存储key格式: hrbp_daily_2026-05-08
+// 周报存储key格式: hrbp_weekly_2026-W19
+// 月报存储key格式: hrbp_monthly_2026-05
+
+function getISOWeekNumber(d) {
+    var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function getDailyKey(dateStr) {
+    return getStorageKey('hrbp_daily_' + dateStr);
+}
+function getWeeklyKey(year, weekNum) {
+    return getStorageKey('hrbp_weekly_' + year + '-W' + String(weekNum).padStart(2, '0'));
+}
+function getMonthlyKey(year, month) {
+    return getStorageKey('hrbp_monthly_' + year + '-' + String(month + 1).padStart(2, '0'));
+}
+
+function saveDailyReportToStorage(dateStr, data) {
+    localStorage.setItem(getDailyKey(dateStr), JSON.stringify(data));
+}
+function loadDailyReportFromStorage(dateStr) {
+    try { return JSON.parse(localStorage.getItem(getDailyKey(dateStr))); } catch(e) { return null; }
+}
+function saveWeeklyReportToStorage(year, weekNum, data) {
+    localStorage.setItem(getWeeklyKey(year, weekNum), JSON.stringify(data));
+}
+function loadWeeklyReportFromStorage(year, weekNum) {
+    try { return JSON.parse(localStorage.getItem(getWeeklyKey(year, weekNum))); } catch(e) { return null; }
+}
+function saveMonthlyReportToStorage(year, month, data) {
+    localStorage.setItem(getMonthlyKey(year, month), JSON.stringify(data));
+}
+function loadMonthlyReportFromStorage(year, month) {
+    try { return JSON.parse(localStorage.getItem(getMonthlyKey(year, month))); } catch(e) { return null; }
+}
+
+function formatDateISO(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function getWeekDateRange() {
+    var now = new Date();
+    var day = now.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() + diff);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return { start: weekStart, end: weekEnd };
+}
+
+function aggregateDailiesToWeekly() {
+    var range = getWeekDateRange();
+    var workParts = [];
+    var dynamicsParts = [];
+    var planParts = [];
+    var count = 0;
+    for (var d = new Date(range.start); d <= range.end; d.setDate(d.getDate() + 1)) {
+        var key = formatDateISO(d);
+        var report = loadDailyReportFromStorage(key);
+        if (report) {
+            count++;
+            if (report.work) workParts.push('【' + key + '】\n' + report.work);
+            if (report.dynamics) dynamicsParts.push('【' + key + '】\n' + report.dynamics);
+            if (report.plan) planParts.push('【' + key + '】\n' + report.plan);
+        }
+    }
+    return {
+        work: workParts.join('\n\n'),
+        dynamics: dynamicsParts.join('\n\n'),
+        plan: planParts.join('\n\n'),
+        count: count
+    };
+}
+
+function aggregateWeekliesToMonthly(year, month) {
+    // 找出本月涉及的所有周
+    var workParts = [];
+    var dynamicsParts = [];
+    var planParts = [];
+    var extraParts = [];
+    var count = 0;
+    // 遍历本月可能的周（最多6周）
+    var monthStart = new Date(year, month, 1);
+    var monthEnd = new Date(year, month + 1, 0);
+    for (var w = 1; w <= 6; w++) {
+        var data = loadWeeklyReportFromStorage(year, w);
+        if (!data) continue;
+        // 检查该周是否在本月范围内
+        var weekRange = getWeekDateRangeFromWeekNum(year, w);
+        if (!weekRange) continue;
+        if (weekRange.end < monthStart || weekRange.start > monthEnd) continue;
+        count++;
+        if (data.work) workParts.push('【第' + w + '周】\n' + data.work);
+        if (data.dynamics) dynamicsParts.push('【第' + w + '周】\n' + data.dynamics);
+        if (data.plan) planParts.push('【第' + w + '周】\n' + data.plan);
+        if (data.extra) extraParts.push('【第' + w + '周】\n' + data.extra);
+    }
+    return {
+        work: workParts.join('\n\n'),
+        dynamics: dynamicsParts.join('\n\n'),
+        plan: planParts.join('\n\n'),
+        extra: extraParts.join('\n\n'),
+        count: count
+    };
+}
+
+function getWeekDateRangeFromWeekNum(year, weekNum) {
+    // 计算ISO周号对应的日期范围
+    var jan4 = new Date(year, 0, 4);
+    var dayOfWeek = jan4.getDay() || 7;
+    var firstMonday = new Date(year, 0, 4 - dayOfWeek + 1);
+    var weekStart = new Date(firstMonday);
+    weekStart.setDate(firstMonday.getDate() + (weekNum - 1) * 7);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return { start: weekStart, end: weekEnd };
+}
+
+function autoFillDynamics() {
+    var dynamicsEl = document.getElementById('dailyReportDynamics');
+    var dynamicsGrid = document.getElementById('wsDynamicsGrid');
+    if (dynamicsGrid) {
+        var items = dynamicsGrid.querySelectorAll('.dynamic-item');
+        var dynamicsText = '';
+        items.forEach(function(item) {
+            var label = item.querySelector('.label');
+            var value = item.querySelector('.value');
+            if (label && value) {
+                dynamicsText += label.textContent + '：' + value.textContent + '人\n';
+            }
+        });
+        dynamicsEl.textContent = dynamicsText || '暂无动态数据';
+    } else {
+        dynamicsEl.textContent = '暂无动态数据';
+    }
+}
+
+function hideExtraReportSections() {
+    document.getElementById('weeklyExtraSection').style.display = 'none';
+    document.getElementById('monthlyExtraSection').style.display = 'none';
+    document.getElementById('monthlyPerfSection').style.display = 'none';
+    document.getElementById('dailyReportSummaryHint').style.display = 'none';
+}
+
 function openDailyReportEditor() {
     currentReportType = 'daily';
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+    hideExtraReportSections();
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+    var dateISO = formatDateISO(now);
     document.getElementById('dailyReportTitle').textContent = '📝 日报 ' + dateStr;
+    document.getElementById('dailyReportWorkLabel').textContent = '今日工作内容';
+    document.getElementById('dailyReportPlanLabel').textContent = '明日计划';
+    document.getElementById('dailyReportWork').placeholder = '请输入今日工作内容...';
+    document.getElementById('dailyReportPlan').placeholder = '请输入明日计划...';
     
     // 自动填充团队动态
-    const dynamicsEl = document.getElementById('dailyReportDynamics');
-    const dynamicsGrid = document.getElementById('wsDynamicsGrid');
-    if (dynamicsGrid) {
-        const items = dynamicsGrid.querySelectorAll('.dynamic-item');
-        let dynamicsText = '';
-        items.forEach(item => {
-            const label = item.querySelector('.label');
-            const value = item.querySelector('.value');
-            if (label && value) {
-                dynamicsText += label.textContent + '：' + value.textContent + '人\n';
-            }
-        });
-        dynamicsEl.textContent = dynamicsText || '暂无动态数据';
-    } else {
-        dynamicsEl.textContent = '暂无动态数据';
-    }
+    autoFillDynamics();
     
-    document.getElementById('dailyReportWork').value = '';
-    document.getElementById('dailyReportPlan').value = '';
+    // 检查是否已有保存的日报
+    var saved = loadDailyReportFromStorage(dateISO);
+    if (saved) {
+        document.getElementById('dailyReportWork').value = saved.work || '';
+        document.getElementById('dailyReportPlan').value = saved.plan || '';
+        var hint = document.getElementById('dailyReportSummaryHint');
+        hint.textContent = '📌 已加载今日已保存的日报，可继续编辑';
+        hint.style.display = 'block';
+    } else {
+        document.getElementById('dailyReportWork').value = '';
+        document.getElementById('dailyReportPlan').value = '';
+    }
     document.getElementById('dailyReportPopup').classList.add('active');
 }
+
 function openWeeklyReportEditor() {
     currentReportType = 'weekly';
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + 1);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    const dateStr = weekStart.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }) + ' - ' + weekEnd.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
+    hideExtraReportSections();
+    document.getElementById('weeklyExtraSection').style.display = 'block';
+    var now = new Date();
+    var range = getWeekDateRange();
+    var weekNum = getISOWeekNumber(now);
+    var dateStr = range.start.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }) + ' - ' + range.end.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
     document.getElementById('dailyReportTitle').textContent = '📋 周报 ' + dateStr;
+    document.getElementById('dailyReportWorkLabel').textContent = '本周工作总结';
+    document.getElementById('dailyReportPlanLabel').textContent = '下周工作计划';
+    document.getElementById('dailyReportWork').placeholder = '请输入本周工作总结...';
+    document.getElementById('dailyReportPlan').placeholder = '请输入下周工作计划...';
+    document.getElementById('weeklyExtra').placeholder = '请输入需要关注的事项...';
     
-    const dynamicsEl = document.getElementById('dailyReportDynamics');
-    const dynamicsGrid = document.getElementById('wsDynamicsGrid');
-    if (dynamicsGrid) {
-        const items = dynamicsGrid.querySelectorAll('.dynamic-item');
-        let dynamicsText = '';
-        items.forEach(item => {
-            const label = item.querySelector('.label');
-            const value = item.querySelector('.value');
-            if (label && value) {
-                dynamicsText += label.textContent + '：' + value.textContent + '人\n';
-            }
-        });
-        dynamicsEl.textContent = dynamicsText || '暂无动态数据';
+    // 自动填充团队动态
+    autoFillDynamics();
+    
+    // 检查是否已有保存的周报
+    var saved = loadWeeklyReportFromStorage(now.getFullYear(), weekNum);
+    if (saved) {
+        document.getElementById('dailyReportWork').value = saved.work || '';
+        document.getElementById('dailyReportPlan').value = saved.plan || '';
+        document.getElementById('weeklyExtra').value = saved.extra || '';
+        // 用保存的动态覆盖
+        if (saved.dynamics) document.getElementById('dailyReportDynamics').textContent = saved.dynamics;
+        var hint = document.getElementById('dailyReportSummaryHint');
+        hint.textContent = '📌 已加载本周已保存的周报，可继续编辑';
+        hint.style.display = 'block';
     } else {
-        dynamicsEl.textContent = '暂无动态数据';
+        // 自动从日报汇总
+        var aggregated = aggregateDailiesToWeekly();
+        document.getElementById('dailyReportWork').value = aggregated.work || '';
+        document.getElementById('dailyReportPlan').value = aggregated.plan || '';
+        document.getElementById('weeklyExtra').value = '';
+        if (aggregated.dynamics) {
+            document.getElementById('dailyReportDynamics').textContent = aggregated.dynamics;
+        }
+        if (aggregated.count > 0) {
+            var hint = document.getElementById('dailyReportSummaryHint');
+            hint.textContent = '🔄 已从本周 ' + aggregated.count + ' 份日报自动汇总，请检查并补充';
+            hint.style.display = 'block';
+        }
     }
-    
-    document.getElementById('dailyReportWork').value = '';
-    document.getElementById('dailyReportPlan').value = '';
     document.getElementById('dailyReportPopup').classList.add('active');
 }
+
+function openMonthlyReportEditor() {
+    currentReportType = 'monthly';
+    hideExtraReportSections();
+    document.getElementById('weeklyExtraSection').style.display = 'block';
+    document.getElementById('monthlyExtraSection').style.display = 'block';
+    document.getElementById('monthlyPerfSection').style.display = 'block';
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
+    document.getElementById('dailyReportTitle').textContent = '📊 月报 ' + dateStr;
+    document.getElementById('dailyReportWorkLabel').textContent = '本月工作总结';
+    document.getElementById('dailyReportPlanLabel').textContent = '下月工作计划';
+    document.getElementById('dailyReportWork').placeholder = '请输入本月工作总结...';
+    document.getElementById('dailyReportPlan').placeholder = '请输入下月工作计划...';
+    document.getElementById('weeklyExtra').placeholder = '请输入需要关注的事项...';
+    
+    // 自动填充团队动态
+    autoFillDynamics();
+    
+    // 自动生成人员变动和绩效概况
+    generateStaffChangeSummary();
+    generatePerfOverview();
+    
+    // 检查是否已有保存的月报
+    var saved = loadMonthlyReportFromStorage(now.getFullYear(), now.getMonth());
+    if (saved) {
+        document.getElementById('dailyReportWork').value = saved.work || '';
+        document.getElementById('dailyReportPlan').value = saved.plan || '';
+        document.getElementById('weeklyExtra').value = saved.extra || '';
+        if (saved.dynamics) document.getElementById('dailyReportDynamics').textContent = saved.dynamics;
+        if (saved.staffChange) document.getElementById('monthlyStaffChange').textContent = saved.staffChange;
+        if (saved.perfOverview) document.getElementById('monthlyPerfOverview').textContent = saved.perfOverview;
+        var hint = document.getElementById('dailyReportSummaryHint');
+        hint.textContent = '📌 已加载本月已保存的月报，可继续编辑';
+        hint.style.display = 'block';
+    } else {
+        // 自动从周报汇总
+        var aggregated = aggregateWeekliesToMonthly(now.getFullYear(), now.getMonth());
+        document.getElementById('dailyReportWork').value = aggregated.work || '';
+        document.getElementById('dailyReportPlan').value = aggregated.plan || '';
+        document.getElementById('weeklyExtra').value = aggregated.extra || '';
+        if (aggregated.dynamics) {
+            document.getElementById('dailyReportDynamics').textContent = aggregated.dynamics;
+        }
+        if (aggregated.count > 0) {
+            var hint = document.getElementById('dailyReportSummaryHint');
+            hint.textContent = '🔄 已从本月 ' + aggregated.count + ' 份周报自动汇总，请检查并补充';
+            hint.style.display = 'block';
+        }
+    }
+    document.getElementById('dailyReportPopup').classList.add('active');
+}
+
+function generateStaffChangeSummary() {
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    var monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    var newJoins = 0;
+    var resigns = 0;
+    allEmployees.forEach(function(emp) {
+        var joinDate = emp['入职时间'];
+        if (joinDate && joinDate !== '/') {
+            var jd = new Date(joinDate);
+            if (jd >= monthStart && jd <= monthEnd) newJoins++;
+        }
+        var status = emp['用工状态'];
+        if (status === '离职') resigns++;
+    });
+    var text = '本月入职：' + newJoins + '人\n当前在职人数：' + (allEmployees.length - resigns) + '人\n历史离职：' + resigns + '人';
+    document.getElementById('monthlyStaffChange').textContent = text;
+}
+
+function generatePerfOverview() {
+    var perfQuarters = ['26年Q1', '26年Q2', '25年Q4'];
+    var gradeMap = { 'S': 0, 'A': 0, 'B+': 0, 'B': 0, 'C': 0, 'D': 0 };
+    var total = 0;
+    allEmployees.forEach(function(emp) {
+        for (var i = 0; i < perfQuarters.length; i++) {
+            var grade = emp[perfQuarters[i]];
+            if (grade && gradeMap.hasOwnProperty(grade)) {
+                gradeMap[grade]++;
+                total++;
+                break;
+            }
+        }
+    });
+    var text = '最近绩效分布（' + total + '人有数据）：\n';
+    Object.keys(gradeMap).forEach(function(g) {
+        if (gradeMap[g] > 0) {
+            var pct = total > 0 ? Math.round(gradeMap[g] / total * 100) : 0;
+            text += g + '：' + gradeMap[g] + '人（' + pct + '%）\n';
+        }
+    });
+    document.getElementById('monthlyPerfOverview').textContent = text || '暂无绩效数据';
+}
+
 function closeDailyReportPopup() {
     document.getElementById('dailyReportPopup').classList.remove('active');
 }
+
 function saveDailyReport() {
-    const work = document.getElementById('dailyReportWork').value.trim();
-    const plan = document.getElementById('dailyReportPlan').value.trim();
-    const dynamics = document.getElementById('dailyReportDynamics').textContent;
-    const title = document.getElementById('dailyReportTitle').textContent.replace(/[📝📋]\s*/, '');
+    var work = document.getElementById('dailyReportWork').value.trim();
+    var plan = document.getElementById('dailyReportPlan').value.trim();
+    var dynamics = document.getElementById('dailyReportDynamics').textContent;
+    var extra = document.getElementById('weeklyExtra') ? document.getElementById('weeklyExtra').value.trim() : '';
+    var title = document.getElementById('dailyReportTitle').textContent.replace(/[📝📋📊]\s*/g, '');
+    var staffChange = '';
+    var perfOverview = '';
+    
+    if (document.getElementById('monthlyExtraSection').style.display !== 'none') {
+        staffChange = document.getElementById('monthlyStaffChange') ? document.getElementById('monthlyStaffChange').textContent : '';
+    }
+    if (document.getElementById('monthlyPerfSection').style.display !== 'none') {
+        perfOverview = document.getElementById('monthlyPerfOverview') ? document.getElementById('monthlyPerfOverview').textContent : '';
+    }
     
     if (!work && !plan) {
-        alert('请至少填写工作内容或明日计划');
+        alert('请至少填写工作内容或计划');
         return;
     }
     
-    const reports = getReports();
-    reports.unshift({
+    var now = new Date();
+    var dateISO = formatDateISO(now);
+    
+    // 保存到类型专属存储
+    if (currentReportType === 'daily') {
+        saveDailyReportToStorage(dateISO, {
+            work: work,
+            plan: plan,
+            dynamics: dynamics,
+            date: dateISO,
+            savedAt: now.toISOString()
+        });
+    } else if (currentReportType === 'weekly') {
+        var weekNum = getISOWeekNumber(now);
+        saveWeeklyReportToStorage(now.getFullYear(), weekNum, {
+            work: work,
+            plan: plan,
+            dynamics: dynamics,
+            extra: extra,
+            date: dateISO,
+            savedAt: now.toISOString()
+        });
+    } else if (currentReportType === 'monthly') {
+        saveMonthlyReportToStorage(now.getFullYear(), now.getMonth(), {
+            work: work,
+            plan: plan,
+            dynamics: dynamics,
+            extra: extra,
+            staffChange: staffChange,
+            perfOverview: perfOverview,
+            date: dateISO,
+            savedAt: now.toISOString()
+        });
+    }
+    
+    // 也保存到报告列表（兼容旧逻辑）
+    var reports = getReports();
+    var reportItem = {
         id: Date.now().toString(),
         type: currentReportType,
         title: title,
-        date: new Date().toLocaleDateString('zh-CN'),
+        date: now.toLocaleDateString('zh-CN'),
         dynamics: dynamics,
         work: work,
         plan: plan
-    });
+    };
+    if (currentReportType === 'weekly' || currentReportType === 'monthly') {
+        reportItem.extra = extra;
+    }
+    if (currentReportType === 'monthly') {
+        reportItem.staffChange = staffChange;
+        reportItem.perfOverview = perfOverview;
+    }
+    reports.unshift(reportItem);
     // 最多保留50篇
     if (reports.length > 50) reports.length = 50;
     saveReports(reports);
@@ -6819,22 +7179,38 @@ function saveDailyReport() {
     renderReportList();
     alert('保存成功！');
 }
+
 function exportDailyReport() {
-    const work = document.getElementById('dailyReportWork').value.trim();
-    const plan = document.getElementById('dailyReportPlan').value.trim();
-    const dynamics = document.getElementById('dailyReportDynamics').textContent;
-    const title = document.getElementById('dailyReportTitle').textContent.replace(/[📝📋]\s*/, '');
+    var work = document.getElementById('dailyReportWork').value.trim();
+    var plan = document.getElementById('dailyReportPlan').value.trim();
+    var dynamics = document.getElementById('dailyReportDynamics').textContent;
+    var extra = document.getElementById('weeklyExtra') ? document.getElementById('weeklyExtra').value.trim() : '';
+    var title = document.getElementById('dailyReportTitle').textContent.replace(/[📝📋📊]\s*/g, '');
     
-    let text = title + '\n\n';
+    var text = title + '\n\n';
     text += '【团队动态】\n' + dynamics + '\n\n';
-    text += '【工作内容】\n' + (work || '无') + '\n\n';
-    text += '【明日计划】\n' + (plan || '无');
+    if (currentReportType === 'daily') {
+        text += '【工作内容】\n' + (work || '无') + '\n\n';
+        text += '【明日计划】\n' + (plan || '无');
+    } else if (currentReportType === 'weekly') {
+        text += '【本周工作总结】\n' + (work || '无') + '\n\n';
+        text += '【下周工作计划】\n' + (plan || '无');
+        if (extra) text += '\n\n【需要关注的事项】\n' + extra;
+    } else if (currentReportType === 'monthly') {
+        text += '【本月工作总结】\n' + (work || '无') + '\n\n';
+        text += '【下月工作计划】\n' + (plan || '无');
+        if (extra) text += '\n\n【需要关注的事项】\n' + extra;
+        var staffChange = document.getElementById('monthlyStaffChange') ? document.getElementById('monthlyStaffChange').textContent : '';
+        if (staffChange) text += '\n\n【团队人员变动】\n' + staffChange;
+        var perfOverview = document.getElementById('monthlyPerfOverview') ? document.getElementById('monthlyPerfOverview').textContent : '';
+        if (perfOverview) text += '\n\n【绩效概况】\n' + perfOverview;
+    }
     
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(text).then(function() {
         alert('已复制到剪贴板！');
-    }).catch(() => {
+    }).catch(function() {
         // fallback
-        const textarea = document.createElement('textarea');
+        var textarea = document.createElement('textarea');
         textarea.value = text;
         document.body.appendChild(textarea);
         textarea.select();
@@ -7006,34 +7382,6 @@ function switchWsPage(page) {
 
 function showWsSettings() {
     alert('设置功能即将上线，敬请期待！');
-}
-
-function openMonthlyReportEditor() {
-    currentReportType = 'monthly';
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
-    document.getElementById('dailyReportTitle').textContent = '📊 月报 ' + dateStr;
-    
-    const dynamicsEl = document.getElementById('dailyReportDynamics');
-    const dynamicsGrid = document.getElementById('wsDynamicsGrid');
-    if (dynamicsGrid) {
-        const items = dynamicsGrid.querySelectorAll('.ws-dynamic-item');
-        let dynamicsText = '';
-        items.forEach(item => {
-            const label = item.querySelector('.label');
-            const value = item.querySelector('.value');
-            if (label && value) {
-                dynamicsText += label.textContent + '：' + value.textContent + '人\n';
-            }
-        });
-        dynamicsEl.textContent = dynamicsText || '暂无动态数据';
-    } else {
-        dynamicsEl.textContent = '暂无动态数据';
-    }
-    
-    document.getElementById('dailyReportWork').value = '';
-    document.getElementById('dailyReportPlan').value = '';
-    document.getElementById('dailyReportPopup').classList.add('active');
 }
 
 // ========== 侧边栏移动端 ==========
@@ -7232,6 +7580,8 @@ document.addEventListener("click", function(e) {
 });
 
 function rosterRowClick(empId) {
+    // 记录来源页面，返回时使用
+    sessionStorage.setItem('detail_source', 'hrbp_roster');
     // 切换到全景大屏并打开详情
     switchPage('dashboard');
     setTimeout(() => {
