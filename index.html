@@ -1600,6 +1600,12 @@
         }
     
 /* ========== HRBP工作台样式 ========== */
+.page-switcher-wrap {
+    transition: opacity 0.3s ease;
+}
+.page-switcher-wrap.hidden-switcher {
+    display: none !important;
+}
 .page-switcher {
     display: flex;
     gap: 0;
@@ -2573,6 +2579,241 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* 返回花名册按钮 */
+.ws-back-roster-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--ws-border);
+    background: #fff;
+    color: var(--ws-text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 16px;
+}
+.ws-back-roster-btn:hover {
+    border-color: var(--ws-accent);
+    color: var(--ws-accent);
+    background: var(--ws-accent-light);
+}
+
+/* 工作台员工详情 */
+.ws-emp-detail-content {
+    display: grid;
+    gap: 20px;
+}
+.ws-emp-detail-card {
+    background: var(--ws-card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--ws-shadow);
+    border: 1px solid var(--ws-border);
+}
+.ws-emp-detail-card h4 {
+    margin: 0 0 14px 0;
+    font-size: 15px;
+    color: var(--ws-text);
+    border-bottom: 1px solid var(--ws-border);
+    padding-bottom: 8px;
+}
+.ws-emp-detail-header {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+.ws-emp-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.ws-emp-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px 20px;
+}
+.ws-emp-info-item {
+    display: flex;
+    flex-direction: column;
+}
+.ws-emp-info-item .label {
+    font-size: 12px;
+    color: var(--ws-text-secondary);
+    margin-bottom: 2px;
+}
+.ws-emp-info-item .value {
+    font-size: 14px;
+    color: var(--ws-text);
+    font-weight: 500;
+}
+.ws-emp-info-item.warning .value {
+    color: #f5222d;
+}
+.ws-emp-info-item.highlight .value {
+    color: var(--ws-accent);
+    font-weight: 600;
+}
+.ws-emp-timeline {
+    position: relative;
+    padding-left: 24px;
+}
+.ws-emp-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--ws-border);
+}
+.ws-emp-timeline-item {
+    position: relative;
+    margin-bottom: 14px;
+    padding-left: 16px;
+}
+.ws-emp-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--ws-accent);
+    background: #fff;
+}
+.ws-emp-timeline-date {
+    font-size: 12px;
+    color: var(--ws-text-secondary);
+}
+.ws-emp-timeline-type {
+    font-size: 13px;
+    color: var(--ws-accent);
+    font-weight: 500;
+}
+.ws-emp-timeline-detail {
+    font-size: 13px;
+    color: var(--ws-text);
+    margin-top: 2px;
+}
+.ws-emp-perf-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.ws-emp-perf-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #f0f0f0;
+}
+.ws-emp-perf-tag .quarter {
+    color: var(--ws-text-secondary);
+}
+.ws-emp-perf-tag .grade-A { color: #52c41a; font-weight: 600; }
+.ws-emp-perf-tag .grade-B { color: #1890ff; font-weight: 600; }
+.ws-emp-perf-tag .grade-C { color: #faad14; font-weight: 600; }
+.ws-emp-perf-tag .grade-D { color: #f5222d; font-weight: 600; }
+.ws-emp-perf-tag .grade-Ap { color: #52c41a; font-weight: 700; }
+
+/* 工作台数据看板 */
+.ws-dashboard-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+.ws-dash-card {
+    background: var(--ws-card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--ws-shadow);
+    border: 1px solid var(--ws-border);
+}
+.ws-dash-card h4 {
+    margin: 0 0 14px 0;
+    font-size: 15px;
+    color: var(--ws-text);
+    border-bottom: 1px solid var(--ws-border);
+    padding-bottom: 8px;
+}
+.ws-dash-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.ws-dash-stat .num {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ws-accent);
+}
+.ws-dash-stat .unit {
+    font-size: 14px;
+    color: var(--ws-text-secondary);
+}
+.ws-dash-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.ws-dash-bar-label {
+    width: 70px;
+    text-align: right;
+    color: var(--ws-text-secondary);
+    flex-shrink: 0;
+}
+.ws-dash-bar-track {
+    flex: 1;
+    height: 18px;
+    background: #f0f0f0;
+    border-radius: 9px;
+    overflow: hidden;
+}
+.ws-dash-bar-fill {
+    height: 100%;
+    border-radius: 9px;
+    transition: width 0.5s ease;
+}
+.ws-dash-bar-count {
+    width: 40px;
+    font-weight: 600;
+    color: var(--ws-text);
+}
+.ws-dash-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.ws-dash-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 13px;
+}
+.ws-dash-list li:last-child {
+    border-bottom: none;
+}
+.ws-dash-list .dept-name {
+    color: var(--ws-text);
+}
+.ws-dash-list .dept-count {
+    font-weight: 600;
+    color: var(--ws-accent);
+}
+
 /* 浅色主题 - 顶部栏 */
 .ws-topbar {
     display: flex;
@@ -3467,7 +3708,7 @@
 
     <div class="dashboard">
         <!-- 页面切换栏（始终可见） -->
-        <div style="display:flex;justify-content:center;margin-bottom:15px;">
+        <div id="pageSwitcherWrap" class="page-switcher-wrap" style="display:flex;justify-content:center;margin-bottom:15px;">
             <div class="page-switcher">
                 <button class="page-switch-btn active" id="switchDashboard" onclick="switchPage('dashboard')">全景大屏</button>
                 <button class="page-switch-btn" id="switchHRBP" onclick="switchPage('hrbp')">HRBP工作台</button>
@@ -3641,7 +3882,7 @@
                 <div class="ws-nav-item" data-page="roster" onclick="switchWsPage('roster')">
                     <span class="nav-icon">&#128101;</span> 员工花名册
                 </div>
-                <div class="ws-nav-item" data-page="dashboard" onclick="switchPage('dashboard')">
+                <div class="ws-nav-item" data-page="dashboard" onclick="switchWsPage('dashboard')">
                     <span class="nav-icon">&#128202;</span> 数据看板
                 </div>
                 <div class="ws-nav-item" data-page="daily" onclick="switchWsPage('daily')">
@@ -3689,7 +3930,7 @@
                         <div class="icon">&#128276;</div>
                         <div class="title">人才流失预警</div>
                     </div>
-                    <div class="ws-quick-card" onclick="switchPage('dashboard')">
+                    <div class="ws-quick-card" onclick="switchWsPage('dashboard')">
                         <div class="icon">&#128202;</div>
                         <div class="title">数据看板</div>
                     </div>
@@ -3787,6 +4028,23 @@
                     </table>
                 </div>
                 <div class="roster-pagination" id="rosterPagination"></div>
+            </div>
+
+            <!-- ========== 员工详情（工作台内） ========== -->
+            <div class="ws-page" id="wsPageEmployeeDetail">
+                <div class="ws-topbar">
+                    <button class="ws-back-roster-btn" onclick="backToRoster()">← 返回花名册</button>
+                    <h2 id="wsEmpDetailTitle">员工详情</h2>
+                </div>
+                <div id="wsEmpDetailContent" class="ws-emp-detail-content"></div>
+            </div>
+
+            <!-- ========== 数据看板（工作台内） ========== -->
+            <div class="ws-page" id="wsPageDashboard">
+                <div class="ws-topbar">
+                    <h2>📊 数据看板</h2>
+                </div>
+                <div id="wsDashboardContent" class="ws-dashboard-content"></div>
             </div>
         </div>
     </div>
@@ -6440,26 +6698,7 @@ showMainPage = function() {
     if (isMobileMode && document.getElementById('detailPage').classList.contains('mobile-detail')) {
         mobileGoBack();
     } else {
-        // 检查是否从HRBP工作台花名册进入详情
-        var detailSource = sessionStorage.getItem('detail_source');
-        if (detailSource === 'hrbp_roster') {
-            sessionStorage.removeItem('detail_source');
-            // 关闭详情页
-            document.getElementById('detailPage').classList.remove('active');
-            document.getElementById('mainPage').classList.remove('hidden');
-            currentEmployee = null;
-            // 切换回HRBP工作台并显示花名册
-            switchPage('hrbp');
-            setTimeout(function() {
-                switchWsPage('roster');
-            }, 100);
-        } else {
-            originalShowMainPage();
-            // 如果当前在HRBP工作台，切换回全景大屏
-            if (currentPage === 'hrbp') {
-                switchPage('dashboard');
-            }
-        }
+        originalShowMainPage();
     }
 };
 
@@ -6497,8 +6736,8 @@ function switchPage(page) {
         // 显示搜索框和部门筛选
         if (searchBox) searchBox.style.display = '';
         // 显示页面切换栏
-        const switcher = document.querySelector('.page-switcher');
-        if (switcher) switcher.parentElement.style.display = '';
+        const switcherWrap = document.getElementById('pageSwitcherWrap');
+        if (switcherWrap) switcherWrap.classList.remove('hidden-switcher');
         // 重新渲染图表
         setTimeout(() => {
             if (!mainPage.classList.contains('hidden')) {
@@ -6521,8 +6760,8 @@ function switchPage(page) {
         if (switchHRBP) switchHRBP.classList.add('active');
         if (searchBox) searchBox.style.display = 'none';
         // 隐藏页面切换栏（工作台有侧边栏导航）
-        const switcher = document.querySelector('.page-switcher');
-        if (switcher) switcher.parentElement.style.display = 'none';
+        const switcherWrap = document.getElementById('pageSwitcherWrap');
+        if (switcherWrap) switcherWrap.classList.add('hidden-switcher');
         // 刷新工作台数据
         updateHRBPWorkspace();
     }
@@ -7309,8 +7548,14 @@ function changeCalendarMonth(delta) {
     renderCalendar();
 }
 function scrollToCalendar() {
-    const cal = document.getElementById('calendarSection');
-    if (cal) cal.scrollIntoView({ behavior: 'smooth' });
+    // 确保在首页看板页面
+    if (currentWsPage !== 'home') {
+        switchWsPage('home');
+    }
+    setTimeout(() => {
+        const cal = document.getElementById('wsCalendarSection');
+        if (cal) cal.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
 }
 
 // ========== 快捷操作跳转 ==========
@@ -7318,13 +7563,9 @@ function hrbpGoRoster() {
     switchWsPage('roster');
 }
 function hrbpGoEmployeeDetail(empId) {
-    // 关闭弹窗，切换到全景大屏，打开详情
     closeContractPopup();
     closeWarningPopup();
-    switchPage('dashboard');
-    setTimeout(() => {
-        showEmployeeDetail(empId);
-    }, 200);
+    showWsEmployeeDetail(empId);
 }
 
 
@@ -7371,7 +7612,10 @@ function switchWsPage(page) {
             if (item.dataset.page === 'monthly') item.classList.add('active');
         });
     } else if (page === 'dashboard') {
-        switchPage('dashboard');
+        document.getElementById('wsPageDashboard').classList.add('active');
+        renderWsDashboard();
+    } else if (page === 'employeeDetail') {
+        document.getElementById('wsPageEmployeeDetail').classList.add('active');
     } else if (page === 'settings') {
         showWsSettings();
     }
@@ -7382,6 +7626,322 @@ function switchWsPage(page) {
 
 function showWsSettings() {
     alert('设置功能即将上线，敬请期待！');
+}
+
+// ========== 工作台内员工详情 ==========
+function showWsEmployeeDetail(empId) {
+    const emp = allEmployees.find(e => e['工号'] === empId);
+    if (!emp) return;
+
+    const idCard = emp['身份证号码'] || '';
+    const autoGender = getGenderFromId(idCard);
+    const autoBirthDate = getBirthFromId(idCard);
+    const gender = (autoGender && autoGender !== '未知') ? autoGender : '未知';
+    const birthDate = autoBirthDate || '';
+    const age = birthDate ? calcAge(birthDate) : '';
+    const tenureDisplay = calcYearsMonths(emp['入职时间']) || '-';
+    const workYearsDisplay = calcYearsMonths(emp['参加工作日期']) || '-';
+    const secondEdu = [emp['第二学历性质'], emp['第二学历']].filter(v => v && v !== '/').join(' ') || emp['第二学历'] || '';
+    const firstEduForDisplay = [emp['第一学历性质'], emp['第一学历']].filter(v => v && v !== '/').join(' ') || emp['第一学历'] || '';
+    const maxEduDisplay = secondEdu || firstEduForDisplay || '未知';
+
+    const avatarBg = gender === '男' ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'linear-gradient(135deg, #ec4899, #f97316)';
+
+    let html = '';
+
+    // 基础信息卡
+    html += '<div class="ws-emp-detail-card">';
+    html += '<div class="ws-emp-detail-header">';
+    html += '<div class="ws-emp-avatar" style="background:' + avatarBg + '">' + emp['姓名'].charAt(0) + '</div>';
+    html += '<div style="flex:1">';
+    html += '<h4 style="margin:0 0 4px 0">' + emp['姓名'] + ' <span style="font-weight:400;font-size:13px;color:var(--ws-text-secondary)">' + emp['工号'] + '</span></h4>';
+    html += '<div style="font-size:13px;color:var(--ws-text-secondary);margin-bottom:12px">' + emp['一级部门'] + ' · ' + emp['二级部门'] + '</div>';
+    html += '<div class="ws-emp-info-grid">';
+    html += wsInfoItem('性别', gender);
+    html += wsInfoItem('年龄', age !== '' ? age + '岁' : '-', '');
+    html += wsInfoItem('民族', emp['民族'] || '-');
+    html += wsInfoItem('政治面貌', emp['政治面貌'] || '-');
+    html += wsInfoItem('岗位', emp['岗位']);
+    html += wsInfoItem('职级', emp['职级'] + (isManagement(emp['职级']) ? '（管理层）' : ''), 'highlight');
+    html += wsInfoItem('最高学历', maxEduDisplay);
+    html += wsInfoItem('司龄', tenureDisplay);
+    html += wsInfoItem('用工状态', emp['用工状态'], emp['用工状态'] === '离职' ? 'warning' : '');
+    html += '</div></div></div></div>';
+
+    // 工作与合同信息
+    html += '<div class="ws-emp-detail-card"><h4>💼 工作与合同信息</h4>';
+    html += '<div class="ws-emp-info-grid">';
+    html += wsInfoItem('入职时间', emp['入职时间'] || '-');
+    html += wsInfoItem('司龄', tenureDisplay);
+    html += wsInfoItem('参加工作日期', emp['参加工作日期'] || '-');
+    html += wsInfoItem('工龄', workYearsDisplay);
+    html += wsInfoItem('合同到期时间', emp['合同到期时间'] || '-');
+    html += wsInfoItem('联系电话', emp['联系电话'] && emp['联系电话'] !== '/' ? emp['联系电话'] : '-');
+    html += wsInfoItem('公司邮箱', emp['公司邮箱'] || '-');
+    html += wsInfoItem('实际办公职场', emp['实际办公职场'] || '-');
+    if (emp['用工状态'] === '离职') {
+        html += wsInfoItem('离职日期', emp['离职日期'] || '-', 'warning');
+        html += wsInfoItem('离职原因', emp['离职原因'] || '-', 'warning');
+    }
+    html += '</div></div>';
+
+    // 教育背景
+    html += '<div class="ws-emp-detail-card"><h4>🎓 教育背景</h4>';
+    html += '<div class="ws-emp-info-grid">';
+    const formatEdu = (nature, level, school, major) => {
+        const natureStr = (nature && nature !== '/') ? nature : '';
+        const levelStr = (level && level !== '/') ? level : '';
+        const schoolStr = (school && school !== '/') ? school : '';
+        const majorStr = (major && major !== '/') ? major : '';
+        const prefix = [natureStr, levelStr].filter(Boolean).join(' ') || '未知';
+        const parts = [prefix];
+        if (schoolStr) parts.push(schoolStr);
+        if (majorStr) parts.push(majorStr);
+        return parts.join(' | ');
+    };
+    const firstEdu = formatEdu(emp['第一学历性质'], emp['第一学历'], emp['第一学历学校'], emp['第一学历专业']);
+    html += wsInfoItem('第一学历', firstEdu || '-');
+    const secondEduRaw = formatEdu(emp['第二学历性质'], emp['第二学历'], emp['第二学历学校'], emp['第二学历专业']);
+    const hasSecondEdu = secondEduRaw && secondEduRaw !== '未知' && !secondEduRaw.includes('未知');
+    if (hasSecondEdu) {
+        html += wsInfoItem('第二学历（最高）', secondEduRaw, 'highlight');
+    }
+    html += '</div></div>';
+
+    // 近期绩效
+    html += '<div class="ws-emp-detail-card"><h4>📊 近期绩效</h4>';
+    const perfQuarters = ['24年Q1','24年Q2','24年Q3','24年Q4','25年Q1','25年Q2','25年Q3','25年Q4','26年Q1','26年Q2'];
+    const recentPerf = [];
+    for (let i = perfQuarters.length - 1; i >= 0; i--) {
+        if (isValidPerf(emp[perfQuarters[i]])) {
+            recentPerf.unshift({ quarter: perfQuarters[i], grade: emp[perfQuarters[i]] });
+        }
+        if (recentPerf.length >= 6) break;
+    }
+    if (recentPerf.length === 0) {
+        html += '<div style="color:var(--ws-text-secondary);font-size:13px">暂无绩效数据</div>';
+    } else {
+        html += '<div class="ws-emp-perf-tags">';
+        recentPerf.forEach(p => {
+            let gradeCls = '';
+            if (p.grade === 'A+' || p.grade === 'A') gradeCls = 'grade-A';
+            else if (p.grade === 'A+') gradeCls = 'grade-Ap';
+            else if (p.grade === 'B') gradeCls = 'grade-B';
+            else if (p.grade === 'C') gradeCls = 'grade-C';
+            else if (p.grade === 'D') gradeCls = 'grade-D';
+            html += '<div class="ws-emp-perf-tag"><span class="quarter">' + p.quarter + '</span><span class="' + gradeCls + '">' + p.grade + '</span></div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // 异动时间线
+    if (emp['异动记录'] && emp['异动记录'].trim() !== '') {
+        html += '<div class="ws-emp-detail-card"><h4>📅 异动时间线</h4>';
+        const changes = parseChangeRecords(emp['异动记录']);
+        if (changes.length > 0) {
+            html += '<div class="ws-emp-timeline">';
+            changes.forEach(change => {
+                const typeMap = {
+                    '入职': { icon: '📥', cls: 'join' }, '转正': { icon: '✅', cls: 'regular' },
+                    '调岗': { icon: '🔄', cls: 'transfer' }, '晋升': { icon: '⬆️', cls: 'promote' },
+                    '降级': { icon: '⬇️', cls: 'demote' }, '离职': { icon: '📤', cls: 'leave' },
+                    '调薪': { icon: '💰', cls: 'salary' }
+                };
+                const info = typeMap[change['异动类型']] || { icon: '📋', cls: '' };
+                let changeDetail = '';
+                if (change['异动前'] && change['异动后']) {
+                    changeDetail = change['异动前'] + ' → ' + change['异动后'];
+                }
+                html += '<div class="ws-emp-timeline-item">';
+                html += '<div class="ws-emp-timeline-date">' + (change['异动日期'] || '') + '</div>';
+                html += '<div class="ws-emp-timeline-type">' + info.icon + ' ' + (change['异动类型'] || '') + '</div>';
+                if (changeDetail) html += '<div class="ws-emp-timeline-detail">' + changeDetail + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+        } else {
+            html += '<div style="color:var(--ws-text-secondary);font-size:13px">暂无异常动记录</div>';
+        }
+        html += '</div>';
+    }
+
+    // 紧急联系人
+    if (emp['紧急联系人'] || (emp['紧急联系人电话'] && emp['紧急联系人电话'].trim() && emp['紧急联系人电话'] !== '/')) {
+        html += '<div class="ws-emp-detail-card"><h4>📞 紧急联系人</h4>';
+        html += '<div class="ws-emp-info-grid">';
+        html += wsInfoItem('联系人', emp['紧急联系人'] || '-');
+        if (emp['紧急联系人电话'] && emp['紧急联系人电话'].trim() && emp['紧急联系人电话'] !== '/') {
+            html += wsInfoItem('联系电话', emp['紧急联系人电话']);
+        }
+        html += '</div></div>';
+    }
+
+    // 工作经历
+    if (emp['工作经历'] && emp['工作经历'].trim() && emp['工作经历'] !== '/' && emp['工作经历'].trim() !== '') {
+        html += '<div class="ws-emp-detail-card"><h4>💡 工作经历</h4>';
+        html += '<div style="font-size:13px;line-height:1.8;color:var(--ws-text)">' + emp['工作经历'].replace(/\n/g, '<br>') + '</div>';
+        html += '</div>';
+    }
+
+    // 备注
+    if (emp['备注'] && emp['备注'].trim() && emp['备注'] !== '/' && emp['备注'].trim() !== '') {
+        html += '<div class="ws-emp-detail-card" style="border-color:#faad14"><h4>📝 备注</h4>';
+        html += '<div style="font-size:13px;line-height:1.8;color:#d48806">' + emp['备注'].replace(/\n/g, '<br>') + '</div>';
+        html += '</div>';
+    }
+
+    document.getElementById('wsEmpDetailTitle').textContent = emp['姓名'] + ' - 员工详情';
+    document.getElementById('wsEmpDetailContent').innerHTML = html;
+    switchWsPage('employeeDetail');
+}
+
+function wsInfoItem(label, value, type) {
+    const cls = type ? ' ' + type : '';
+    return '<div class="ws-emp-info-item' + cls + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+}
+
+function backToRoster() {
+    switchWsPage('roster');
+}
+
+// 解析异动记录为结构化数组
+function parseChangeRecords(changeStr) {
+    const changes = [];
+    changeStr.split('|').forEach(function(part) {
+        const fields = part.split(';');
+        if (fields.length >= 7) {
+            var before = '';
+            var after = '';
+            if (fields[2] && fields[2].trim()) before += fields[2];
+            if (fields[4] && fields[4].trim()) before += (before ? ' ' : '') + fields[4];
+            if (fields[3] && fields[3].trim()) after += fields[3];
+            if (fields[5] && fields[5].trim()) after += (after ? ' ' : '') + fields[5];
+            changes.push({
+                '异动日期': fields[0],
+                '异动类型': fields[1],
+                '异动前': before,
+                '异动后': after,
+                '备注': fields[6] || ''
+            });
+        }
+    });
+    changes.sort(function(a, b) {
+        return new Date(b['异动日期']) - new Date(a['异动日期']);
+    });
+    return changes;
+}
+
+// ========== 工作台数据看板 ==========
+function renderWsDashboard() {
+    const baseEmployees = currentDeptPermission === 'all'
+        ? allEmployees
+        : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
+    const activeEmployees = baseEmployees.filter(e => e['用工状态'] !== '离职');
+    const leaveEmployees = baseEmployees.filter(e => e['用工状态'] === '离职');
+    const totalCount = activeEmployees.length;
+    const leaveCount = leaveEmployees.length;
+
+    // 部门人数分布
+    const deptMap = {};
+    activeEmployees.forEach(e => {
+        const dept = e['一级部门'] || '未知';
+        deptMap[dept] = (deptMap[dept] || 0) + 1;
+    });
+    const deptEntries = Object.entries(deptMap).sort((a, b) => b[1] - a[1]);
+    const maxDeptCount = deptEntries.length > 0 ? deptEntries[0][1] : 1;
+
+    // 绩效等级分布
+    const perfMap = { 'A+': 0, 'A': 0, 'B': 0, 'C': 0, 'D': 0 };
+    activeEmployees.forEach(e => {
+        const latest = getLatestPerf(e);
+        if (latest && perfMap.hasOwnProperty(latest)) {
+            perfMap[latest]++;
+        }
+    });
+    const maxPerfCount = Math.max(...Object.values(perfMap), 1);
+
+    // 平均司龄
+    const avgTenure = totalCount > 0 ? activeEmployees.reduce((sum, e) =>
+        sum + parseFloat(calcYears(e['入职时间'])), 0) / totalCount : 0;
+
+    // 合同到期预警人数
+    const now = new Date();
+    const contractWarning = activeEmployees.filter(e => {
+        if (!e['合同到期时间'] || e['合同到期时间'] === '/' || e['合同到期时间'] === '') return false;
+        const d = new Date(e['合同到期时间']);
+        if (isNaN(d.getTime())) return false;
+        const diff = (d - now) / (1000 * 60 * 60 * 24);
+        return diff >= 0 && diff <= 30;
+    }).length;
+
+    // 人才流失预警人数
+    let warningCount = 0;
+    activeEmployees.forEach(e => {
+        if (isManagement(e['职级'])) return;
+        const latestPerf = getLatestPerf(e);
+        const cat2025 = e['2025年盘点结果'] || e['2024年盘点结果'];
+        const isLowPot = cat2025 === '差距员工' || cat2025 === '问题员工' || cat2025 === '胜任员工';
+        if ((latestPerf === 'C' || latestPerf === 'D') && isLowPot) {
+            warningCount++;
+        }
+    });
+
+    const barColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16', '#0ea5e9'];
+
+    let html = '';
+
+    // 概览卡片
+    html += '<div class="ws-dash-card">';
+    html += '<h4>👥 人员概览</h4>';
+    html += '<div class="ws-dash-stat"><span class="num">' + totalCount + '</span><span class="unit">在职</span></div>';
+    html += '<div style="display:flex;gap:20px;margin-bottom:12px">';
+    html += '<div style="font-size:13px;color:var(--ws-text-secondary)">离职 <b style="color:var(--ws-text)">' + leaveCount + '</b></div>';
+    html += '<div style="font-size:13px;color:var(--ws-text-secondary)">在职率 <b style="color:#52c41a">' + (totalCount + leaveCount > 0 ? (totalCount / (totalCount + leaveCount) * 100).toFixed(1) : '0') + '%</b></div>';
+    html += '</div>';
+    html += '<div style="font-size:13px;color:var(--ws-text-secondary)">平均司龄 <b style="color:var(--ws-accent)">' + avgTenure.toFixed(1) + '年</b></div>';
+    html += '</div>';
+
+    // 部门人数分布
+    html += '<div class="ws-dash-card">';
+    html += '<h4>🏢 部门人数分布</h4>';
+    if (deptEntries.length === 0) {
+        html += '<div style="color:var(--ws-text-secondary);font-size:13px">暂无数据</div>';
+    } else {
+        deptEntries.forEach((entry, i) => {
+            const pct = (entry[1] / maxDeptCount * 100).toFixed(1);
+            const color = barColors[i % barColors.length];
+            html += '<div class="ws-dash-bar-row">';
+            html += '<div class="ws-dash-bar-label">' + entry[0] + '</div>';
+            html += '<div class="ws-dash-bar-track"><div class="ws-dash-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+            html += '<div class="ws-dash-bar-count">' + entry[1] + '</div>';
+            html += '</div>';
+        });
+    }
+    html += '</div>';
+
+    // 绩效等级分布
+    html += '<div class="ws-dash-card">';
+    html += '<h4>📊 绩效等级分布</h4>';
+    const perfColors = { 'A+': '#52c41a', 'A': '#73d13d', 'B': '#1890ff', 'C': '#faad14', 'D': '#f5222d' };
+    Object.entries(perfMap).forEach(([grade, count]) => {
+        const pct = (count / maxPerfCount * 100).toFixed(1);
+        html += '<div class="ws-dash-bar-row">';
+        html += '<div class="ws-dash-bar-label">' + grade + '</div>';
+        html += '<div class="ws-dash-bar-track"><div class="ws-dash-bar-fill" style="width:' + pct + '%;background:' + (perfColors[grade] || '#3b82f6') + '"></div></div>';
+        html += '<div class="ws-dash-bar-count">' + count + '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    // 预警卡片
+    html += '<div class="ws-dash-card">';
+    html += '<h4>⚠️ 预警信息</h4>';
+    html += '<div class="ws-dash-stat"><span class="num" style="color:#faad14">' + contractWarning + '</span><span class="unit">人合同即将到期</span></div>';
+    html += '<div class="ws-dash-stat"><span class="num" style="color:#f5222d">' + warningCount + '</span><span class="unit">人人才流失预警</span></div>';
+    html += '</div>';
+
+    document.getElementById('wsDashboardContent').innerHTML = html;
 }
 
 // ========== 侧边栏移动端 ==========
@@ -7580,13 +8140,7 @@ document.addEventListener("click", function(e) {
 });
 
 function rosterRowClick(empId) {
-    // 记录来源页面，返回时使用
-    sessionStorage.setItem('detail_source', 'hrbp_roster');
-    // 切换到全景大屏并打开详情
-    switchPage('dashboard');
-    setTimeout(() => {
-        showEmployeeDetail(empId);
-    }, 200);
+    showWsEmployeeDetail(empId);
 }
 
 // ========== 花名册绩效快速查看弹窗 ==========
