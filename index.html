@@ -44,6 +44,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 30px rgba(0,212,255,0.3);
+            white-space: nowrap;
+            overflow: visible;
         }
         .header-left {
             display: flex;
@@ -1630,9 +1632,26 @@
 .hrbp-workspace {
     display: none;
     padding: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 .hrbp-workspace.active {
-    display: block;
+    display: flex;
+    opacity: 1;
+}
+/* 全景大屏隐藏/显示过渡 */
+.dashboard {
+    transition: opacity 0.3s ease;
+}
+.dashboard.hidden-page {
+    display: none !important;
 }
 
 /* 工作台顶部 */
@@ -6439,9 +6458,11 @@ function switchPage(page) {
     const dashboard = document.querySelector('.dashboard');
 
     if (page === 'dashboard') {
+        // 隐藏工作台，显示全景大屏
+        hrbpWorkspace.classList.remove('active');
+        dashboard.classList.remove('hidden-page');
         mainPage.style.display = '';
         detailPage.style.display = '';
-        hrbpWorkspace.classList.remove('active');
         if (switchDashboard) switchDashboard.classList.add('active');
         if (switchHRBP) switchHRBP.classList.remove('active');
         // 显示搜索框和部门筛选
@@ -6462,6 +6483,8 @@ function switchPage(page) {
             }
         }, 100);
     } else if (page === 'hrbp') {
+        // 隐藏全景大屏，显示工作台
+        dashboard.classList.add('hidden-page');
         mainPage.style.display = 'none';
         detailPage.style.display = 'none';
         hrbpWorkspace.classList.add('active');
@@ -7055,7 +7078,13 @@ function initRoster() {
         if (e['一级部门'] && e['一级部门'].trim()) deptSet.add(e['一级部门'].trim());
     });
     
-    const depts = [...deptSet].sort();
+    // 根据部门权限过滤
+    const allowedDepts = getAllowedDepts();
+    let depts = [...deptSet].sort();
+    if (allowedDepts) {
+        depts = depts.filter(d => allowedDepts.includes(d));
+    }
+    
     depts.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
