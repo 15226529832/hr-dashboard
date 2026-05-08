@@ -1710,7 +1710,7 @@
                     <div class="chart-wrapper"><canvas id="deptPerfChart"></canvas></div>
                 </div>
                 <div class="chart-container talent-grid-container">
-                    <div class="chart-title">🎯 人才九宫格（P/B序列 2025盘点）</div>
+                    <div class="chart-title">🎯 人才九宫格（P/B序列）</div>
                     <div class="chart-wrapper"><canvas id="talentGridChart"></canvas></div>
                 </div>
             </div>
@@ -1748,6 +1748,24 @@
                 </div>
             </div>
             
+            <!-- 紧急联系人 -->
+            <div class="chart-container" style="margin-bottom: 20px;" id="contactInfoSection">
+                <div class="chart-title">📞 紧急联系人</div>
+                <div class="info-grid" id="contactInfo"></div>
+            </div>
+            
+            <!-- 工作经历 -->
+            <div class="chart-container" style="margin-bottom: 20px; display: none;" id="workExpSection">
+                <div class="chart-title">💡 工作经历</div>
+                <div id="workExpContent" style="padding:15px;color:#c8d8e8;font-size:13px;line-height:1.8;"></div>
+            </div>
+            
+            <!-- 备注 -->
+            <div class="chart-container" style="margin-bottom: 20px; border: 1px solid rgba(255,165,0,0.3); display: none;" id="remarkSection">
+                <div class="chart-title">📝 备注</div>
+                <div id="remarkContent" style="padding:15px;color:#ffa500;font-size:13px;line-height:1.8;"></div>
+            </div>
+            
             <!-- 异动时间线 -->
             <div class="chart-container" style="margin-bottom: 20px;">
                 <div class="chart-title">📅 异动时间线</div>
@@ -1766,7 +1784,7 @@
                     </div>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">🎯 人才盘点对比（2024→2025→2026）</div>
+                    <div class="chart-title">🎯 人才盘点对比（2024→2025）</div>
                     <div class="chart-wrapper"><canvas id="talentCompareChart"></canvas></div>
                 </div>
             </div>
@@ -1819,7 +1837,8 @@ const PASSWORD_MAP = {
     '86e5f58847f3b8252e774064cadc78e6d9886d3bc9dfb2d42d5cbd8dbd36eaa8': '财务管理部',     // cwgl2026 -> 财务管理部
     '1e671d31b6382a69bfba29dc5cc2709e4b413ee1e1675c54b9dd96174a72bbc6': '产融数字研究院', // crsz2026 -> 产融数字研究院
     '0df02ea31e62327bf083dd530dd970843a22c4aa41137c980460bf1cb3eb697d': '董事会办公室',    // dsb2026 -> 董事会办公室
-    '8eddfba2257e802ceabdb509c321a383276c25ef15448476f18b424749452f84': '风控法务部'       // taohan2026 -> 风控法务部
+    '8eddfba2257e802ceabdb509c321a383276c25ef15448476f18b424749452f84': '风控法务部',      // taohan2026 -> 风控法务部
+    '0523bb18bed32d676a563e69fd5b35b43177e7d33d1a6e63f838b376a38f25be': '公司领导'           // gsgld2026 -> 公司领导
 };
 let isAuthenticated = false;
 let currentDeptPermission = 'all'; // 当前登录用户的部门权限
@@ -2022,12 +2041,12 @@ function classifyEduLevel(level) {
 
 // 获取最新的有效绩效季度值
 function getLatestPerf(emp) {
-    const quarters = ['2026Q4','2026Q3','2026Q2','2026Q1','2025Q4','2025Q3','2025Q2','2025Q1','2024Q4','2024Q3','2024Q2','2024Q1'];
+    const quarters = ['26年Q4','26年Q3','26年Q2','26年Q1','25年Q4','25年Q3','25年Q2','25年Q1','24年Q4','24年Q3','24年Q2','24年Q1'];
     for (const q of quarters) {
         if (isValidPerf(emp[q])) return emp[q];
     }
     // Also check annual performance
-    const annualKeys = ['2026年度','2025年度','2024年度'];
+    const annualKeys = ['26年年度','25年年度','24年年度'];
     for (const k of annualKeys) {
         if (isValidPerf(emp[k])) return emp[k];
     }
@@ -2036,7 +2055,7 @@ function getLatestPerf(emp) {
 
 // 获取所有有效的绩效季度数据（用于趋势图，自动检测最新季度）
 function getPerfTrendData(emp) {
-    const allQuarters = ['2024Q1','2024Q2','2024Q3','2024Q4','2025Q1','2025Q2','2025Q3','2025Q4','2026Q1','2026Q2','2026Q3','2026Q4'];
+    const allQuarters = ['24年Q1','24年Q2','24年Q3','24年Q4','25年Q1','25年Q2','25年Q3','25年Q4','26年Q1','26年Q2','26年Q3','26年Q4'];
     // Find the last quarter that has valid data for this employee
     let lastValidIdx = -1;
     allQuarters.forEach((q, i) => {
@@ -2045,7 +2064,7 @@ function getPerfTrendData(emp) {
     // Include all quarters up to the last valid one, minimum up to the quarter after last valid for context
     const endIdx = lastValidIdx >= 0 ? Math.min(lastValidIdx + 1, allQuarters.length - 1) : allQuarters.length - 1;
     // Also check if there's annual data that extends further
-    const annualKeys = ['2024年度','2025年度','2026年度'];
+    const annualKeys = ['24年年度','25年年度','26年年度'];
     annualKeys.forEach(key => {
         if (isValidPerf(emp[key])) {
             const year = key.replace('年度', '');
@@ -2173,8 +2192,18 @@ function parseCSV(csv) {
         // 跳过全部字段为空的行
         if (values.every(v => v === '' || v === '/')) continue;
         const row = {};
+        // Track duplicate column names (e.g., '联系电话' appears twice as columns 15 and 32)
+        const seenNames = {};
         headers.forEach((h, idx) => {
-            row[h] = (idx < values.length) ? (values[idx] || '') : '';
+            let fieldName = h;
+            if (seenNames[h] !== undefined) {
+                // Second occurrence: rename to '紧急联系人电话' (for column 32)
+                fieldName = '紧急联系人电话';
+                seenNames[h] = -1; // mark as renamed
+            } else {
+                seenNames[h] = idx;
+            }
+            row[fieldName] = (idx < values.length) ? (values[idx] || '') : '';
         });
         data.push(row);
     }
@@ -2301,8 +2330,8 @@ function updateDashboard() {
     
     // 再按当前选择的部门过滤（管理员可能选了特定部门）
     filteredEmployees = currentDept 
-        ? baseEmployees.filter(e => e['一级部门'] === currentDept && e['状态'] !== '离职')
-        : baseEmployees.filter(e => e['状态'] !== '离职');
+        ? baseEmployees.filter(e => e['一级部门'] === currentDept && e['用工状态'] !== '离职')
+        : baseEmployees.filter(e => e['用工状态'] !== '离职');
     
     updateMetrics();
     updateEduChart();
@@ -2323,18 +2352,18 @@ function updateMetrics() {
     const totalCount = filteredEmployees.length;
     
     const thisMonthJoin = filteredEmployees.filter(e => {
-        const d = new Date(e['入职日期']);
+        const d = new Date(e['入职时间']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length;
     
     const thisMonthLeave = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
-        if (e['状态'] !== '离职' || !e['离职日期']) return false;
+        if (e['用工状态'] !== '离职' || !e['离职日期']) return false;
         const d = new Date(e['离职日期']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length;
     
     const avgTenure = filteredEmployees.reduce((sum, e) => 
-        sum + parseFloat(calcYears(e['入职日期'])), 0) / totalCount;
+        sum + parseFloat(calcYears(e['入职时间'])), 0) / totalCount;
     
     // 人才流失预警计算
     const warningEmployees = [];
@@ -2343,7 +2372,7 @@ function updateMetrics() {
         if (isManagement(e['职级'])) return;
         const latestPerf = getLatestPerf(e);
         // 使用最近一次有效盘点结果
-        const cat2025 = e['2025盘点结果'] || e['2024盘点结果'];
+        const cat2025 = e['2025年盘点结果'] || e['2024年盘点结果'];
         const isLowPot = cat2025 === '差距员工' || cat2025 === '问题员工' || cat2025 === '胜任员工';
         if ((latestPerf === 'C' || latestPerf === 'D') && isLowPot) {
             warningEmployees.push(e);
@@ -2389,10 +2418,11 @@ function updateEduChart() {
     if (canvas.width <= dpr || canvas.height <= dpr) return;
     ctx.scale(dpr, dpr);
     
-    // 按最高学历层次归类（只分三档：专科、本科、研究生）
+    // 按第二学历层次归类（只分三档：专科、本科、研究生），如果第二学历为空则用第一学历
     const eduCount = {};
     filteredEmployees.forEach(e => {
-        const category = classifyEduLevel(e['最高学历']);
+        const eduLevel = e['第二学历'] && e['第二学历'].trim() && e['第二学历'] !== '/' ? e['第二学历'] : (e['第一学历'] || '');
+        const category = classifyEduLevel(eduLevel);
         eduCount[category] = (eduCount[category] || 0) + 1;
     });
     
@@ -2525,7 +2555,7 @@ function updateTenureChart() {
     ];
     
     const counts = ranges.map(r => filteredEmployees.filter(e => {
-        const t = parseFloat(calcYears(e['入职日期']));
+        const t = parseFloat(calcYears(e['入职时间']));
         return t >= r.min && t < r.max;
     }).length);
     
@@ -2686,13 +2716,13 @@ function updateTrendChart() {
         months.push(monthStr);
         
         const joinCount = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
-            const jd = new Date(e['入职日期']);
+            const jd = new Date(e['入职时间']);
             return jd.getFullYear() === d.getFullYear() && jd.getMonth() === d.getMonth();
         }).length;
         joinData.push(joinCount);
         
         const leaveCount = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
-            if (e['状态'] !== '离职' || !e['离职日期']) return false;
+            if (e['用工状态'] !== '离职' || !e['离职日期']) return false;
             const ld = new Date(e['离职日期']);
             return ld.getFullYear() === d.getFullYear() && ld.getMonth() === d.getMonth();
         }).length;
@@ -2957,7 +2987,7 @@ function updateTalentGridChart() {
     // 仅统计P序列和B序列员工（M序列管理层不参与盘点）
     // 盘点结果为"/"的也视为不参与
     const assessableEmployees = filteredEmployees.filter(e => 
-        !isManagement(e['职级']) && isValidAssessment(e['2025盘点结果'])
+        !isManagement(e['职级']) && isValidAssessment(e['2025年盘点结果'])
     );
     
     // 统计每个分类的人数
@@ -2966,7 +2996,7 @@ function updateTalentGridChart() {
         row.forEach(cat => {
             grid[cat] = [];
             assessableEmployees.forEach(e => {
-                if (e['2025盘点结果'] === cat) {
+                if (e['2025年盘点结果'] === cat) {
                     grid[cat].push(e);
                 }
             });
@@ -3103,7 +3133,7 @@ function showWarningPopup() {
         
         employees.forEach(e => {
             const latestPerf = getLatestPerf(e);
-            const cat = e['2025盘点结果'] || e['2024盘点结果'] || '';
+            const cat = e['2025年盘点结果'] || e['2024年盘点结果'] || '';
             html += '<tr onclick="closeWarningPopup();showEmployeeDetail(\'' + e['工号'] + '\')">' +
                 '<td class="emp-name">' + e['姓名'] + '</td>' +
                 '<td>' + e['工号'] + '</td>' +
@@ -3132,7 +3162,7 @@ function showJoinPopup() {
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     const joinList = filteredEmployees.filter(e => {
-        const d = new Date(e['入职日期']);
+        const d = new Date(e['入职时间']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
     const popup = document.getElementById('joinPopup');
@@ -3141,7 +3171,7 @@ function showJoinPopup() {
         contentDiv.innerHTML = '<div class="warning-empty">本月暂无入职人员</div>';
     } else {
         let html = '<table class="warning-table"><thead><tr>' +
-            '<th>姓名</th><th>工号</th><th>部门</th><th>岗位</th><th>入职日期</th>' +
+            '<th>姓名</th><th>工号</th><th>部门</th><th>岗位</th><th>入职时间</th>' +
             '</tr></thead><tbody>';
         joinList.forEach(e => {
             html += '<tr onclick="closeJoinPopup();showEmployeeDetail(\'' + e['工号'] + '\')" style="cursor:pointer;">' +
@@ -3149,7 +3179,7 @@ function showJoinPopup() {
                 '<td>' + e['工号'] + '</td>' +
                 '<td>' + (e['一级部门'] || '') + '</td>' +
                 '<td>' + (e['岗位'] || '') + '</td>' +
-                '<td>' + (e['入职日期'] || '-') + '</td>' +
+                '<td>' + (e['入职时间'] || '-') + '</td>' +
                 '</tr>';
         });
         html += '</tbody></table>';
@@ -3170,7 +3200,7 @@ function showLeavePopup() {
     const thisYear = now.getFullYear();
     const leaveSource = currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
     const leaveList = leaveSource.filter(e => {
-        if (e['状态'] !== '离职' || !e['离职日期']) return false;
+        if (e['用工状态'] !== '离职' || !e['离职日期']) return false;
         const d = new Date(e['离职日期']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
@@ -3271,23 +3301,23 @@ function showEmployeeDetail(empId) {
         updateMobileButtons();
     }
     
-    // 从身份证号自动计算性别、出生年月、年龄（优先使用自动计算值）
-    const idCard = emp['身份证号'] || '';
+    // 从身份证号码自动计算性别、出生年月、年龄（优先使用自动计算值）
+    const idCard = emp['身份证号码'] || '';
     const autoGender = getGenderFromId(idCard);
     const autoBirthDate = getBirthFromId(idCard);
     // 优先使用自动计算值，CSV中的值为空或"/"时也使用自动计算
     const gender = (autoGender && autoGender !== '未知') ? autoGender : 
-                   (emp['性别'] && emp['性别'] !== '/' && emp['性别'] !== '') ? emp['性别'] : '未知';
+                   '未知';
     const birthDate = autoBirthDate ? autoBirthDate : 
-                      (emp['出生年月'] && emp['出生年月'] !== '/' && emp['出生年月'] !== '') ? emp['出生年月'] : '';
+                      '';
     const age = birthDate ? calcAge(birthDate) : '';
     
     // 计算司龄和工龄（显示为"X年X月"格式，优先自动计算）
-    const tenureDisplay = calcYearsMonths(emp['入职日期']) || ((emp['司龄'] && emp['司龄'] !== '/' && emp['司龄'] !== '') ? emp['司龄'] : '-');
-    const workYearsDisplay = calcYearsMonths(emp['参加工作时间']) || ((emp['工龄'] && emp['工龄'] !== '/' && emp['工龄'] !== '') ? emp['工龄'] : '-');
+    const tenureDisplay = calcYearsMonths(emp['入职时间']) || ('-');
+    const workYearsDisplay = calcYearsMonths(emp['参加工作日期']) || ('-');
     // 保留小数版本用于其他计算
-    const tenure = calcYears(emp['入职日期']);
-    const workYears = calcYears(emp['参加工作时间']);
+    const tenure = calcYears(emp['入职时间']);
+    const workYears = calcYears(emp['参加工作日期']);
     
     // 头像和部门
     const avatar = document.getElementById('detailAvatar');
@@ -3299,36 +3329,46 @@ function showEmployeeDetail(empId) {
     document.getElementById('detailDept').textContent = `${emp['一级部门']} · ${emp['二级部门']}`;
     
     // 基础信息（全景大屏展示）
-    const eduDisplay = [emp['最高学历性质'], emp['最高学历']].filter(v => v && v !== '/').join(' ') || emp['最高学历'] || '未知';
+    // 获取第二学历，如果为空则用第一学历作为最高学历
+    const secondEdu = [emp['第二学历性质'], emp['第二学历']].filter(v => v && v !== '/').join(' ') || emp['第二学历'] || '';
+    const firstEduForDisplay = [emp['第一学历性质'], emp['第一学历']].filter(v => v && v !== '/').join(' ') || emp['第一学历'] || '';
+    const maxEduDisplay = secondEdu || firstEduForDisplay || '未知';
+    
     document.getElementById('basicInfo').innerHTML = `
         <div class="info-item highlight"><div class="label">工号</div><div class="value">${emp['工号']}</div></div>
         <div class="info-item highlight"><div class="label">姓名</div><div class="value">${emp['姓名']}</div></div>
         <div class="info-item"><div class="label">性别</div><div class="value">${gender}</div></div>
         <div class="info-item"><div class="label">年龄</div><div class="value">${age !== '' ? age + '岁' : '-'}</div></div>
         <div class="info-item"><div class="label">民族</div><div class="value">${emp['民族']}</div></div>
+        <div class="info-item"><div class="label">政治面貌</div><div class="value">${emp['政治面貌'] || '-'}</div></div>
+        <div class="info-item"><div class="label">籍贯</div><div class="value">${emp['籍贯'] || '-'}</div></div>
+        <div class="info-item"><div class="label">户口性质</div><div class="value">${emp['户口性质'] || '-'}</div></div>
         <div class="info-item"><div class="label">一级部门</div><div class="value">${emp['一级部门']}</div></div>
         <div class="info-item"><div class="label">二级部门</div><div class="value">${emp['二级部门']}</div></div>
         <div class="info-item"><div class="label">岗位</div><div class="value">${emp['岗位']}</div></div>
         <div class="info-item highlight"><div class="label">职级</div><div class="value">${emp['职级']}${isManagement(emp['职级']) ? '（管理层）' : ''}</div></div>
-        <div class="info-item"><div class="label">最高学历</div><div class="value">${eduDisplay}</div></div>
+        <div class="info-item"><div class="label">最高学历</div><div class="value">${maxEduDisplay}</div></div>
         <div class="info-item"><div class="label">司龄</div><div class="value">${tenureDisplay}</div></div>
-        <div class="info-item ${emp['状态'] === '离职' ? 'warning' : ''}"><div class="label">状态</div><div class="value">${emp['状态']}</div></div>
+        <div class="info-item ${emp['用工状态'] === '离职' ? 'warning' : ''}"><div class="label">用工状态</div><div class="value">${emp['用工状态']}</div></div>
     `;
     
     // 工作和合同信息
     let workInfoHtml = `
-        <div class="info-item"><div class="label">劳动合同Base地</div><div class="value">${emp['劳动合同Base地']}</div></div>
+        <div class="info-item"><div class="label">实际办公职场</div><div class="value">${emp['实际办公职场'] || '-'}</div></div>
+        <div class="info-item"><div class="label">劳动合同Base地</div><div class="value">${emp['劳动合同Base地'] || '-'}</div></div>
         ${emp['联系电话'] && emp['联系电话'] !== '/' && emp['联系电话'].trim() !== '' ? '<div class="info-item"><div class="label">联系电话</div><div class="value">' + emp['联系电话'] + '</div></div>' : ''}
-        <div class="info-item"><div class="label">参加工作时间</div><div class="value">${emp['参加工作时间']}</div></div>
+        <div class="info-item"><div class="label">个人邮箱</div><div class="value">${emp['个人邮箱'] || '-'}</div></div>
+        <div class="info-item"><div class="label">公司邮箱</div><div class="value">${emp['公司邮箱'] || '-'}</div></div>
+        <div class="info-item"><div class="label">参加工作日期</div><div class="value">${emp['参加工作日期'] || '-'}</div></div>
         <div class="info-item"><div class="label">工龄</div><div class="value">${workYearsDisplay}</div></div>
-        <div class="info-item"><div class="label">入职日期</div><div class="value">${emp['入职日期']}</div></div>
+        <div class="info-item"><div class="label">入职时间</div><div class="value">${emp['入职时间'] || '-'}</div></div>
         <div class="info-item"><div class="label">司龄</div><div class="value">${tenureDisplay}</div></div>
-        <div class="info-item"><div class="label">合同到期日</div><div class="value">${emp['合同到期日']}</div></div>
-        <div class="info-item"><div class="label">婚育状态</div><div class="value">${emp['婚育状态']}</div></div>
+        <div class="info-item"><div class="label">合同到期时间</div><div class="value">${emp['合同到期时间'] || '-'}</div></div>
+        <div class="info-item"><div class="label">婚育状况</div><div class="value">${emp['婚育状况'] || '-'}</div></div>
     `;
     
     // 离职人员额外信息
-    if (emp['状态'] === '离职') {
+    if (emp['用工状态'] === '离职') {
         workInfoHtml += `
             <div class="info-item warning"><div class="label">离职日期</div><div class="value">${emp['离职日期']}</div></div>
             <div class="info-item warning"><div class="label">离职原因</div><div class="value">${emp['离职原因']}</div></div>
@@ -3350,13 +3390,18 @@ function showEmployeeDetail(empId) {
         return parts.join(' | ');
     };
     
-    const firstEdu = formatEdu(emp['第一学历性质'], emp['第一学历'], emp['第一学历院校'], emp['第一学历专业']);
-    const maxEdu = formatEdu(emp['最高学历性质'], emp['最高学历'], emp['最高学历院校'], emp['最高学历专业']);
+    const firstEdu = formatEdu(emp['第一学历性质'], emp['第一学历'], emp['第一学历学校'], emp['第一学历专业']);
+    // 如果第二学历为空，隐藏最高学历展示（或显示"同第一学历"）
+    const secondEduRaw = formatEdu(emp['第二学历性质'], emp['第二学历'], emp['第二学历学校'], emp['第二学历专业']);
+    const hasSecondEdu = secondEduRaw && secondEduRaw !== '未知' && !secondEduRaw.includes('未知');
     
-    document.getElementById('eduInfo').innerHTML = `
-        <div class="info-item" style="grid-column: 1 / -1;"><div class="label">第一学历</div><div class="value">${firstEdu}</div></div>
-        <div class="info-item highlight" style="grid-column: 1 / -1;"><div class="label">最高学历</div><div class="value">${maxEdu}</div></div>
+    let eduInfoHtml = `
+        <div class="info-item" style="grid-column: 1 / -1;"><div class="label">第一学历</div><div class="value">${firstEdu || '-'}</div></div>
     `;
+    if (hasSecondEdu) {
+        eduInfoHtml += `<div class="info-item highlight" style="grid-column: 1 / -1;"><div class="label">第二学历（最高学历）</div><div class="value">${secondEduRaw}</div></div>`;
+    }
+    document.getElementById('eduInfo').innerHTML = eduInfoHtml;
     
     // 异动时间线
     renderTimeline(emp['工号']);
@@ -3364,6 +3409,41 @@ function showEmployeeDetail(empId) {
     // 绩效图表
     updatePerfTrendChart(emp);
     updateTalentCompareChart(emp);
+    
+    // ===== 新增字段展示：紧急联系人、工作经历、备注 =====
+    // 紧急联系人（姓名+电话）
+    const contactInfoEl = document.getElementById('contactInfo');
+    if (contactInfoEl) {
+        let contactHtml = '<div class="info-item"><div class="label">联系人</div><div class="value">' + (emp['紧急联系人'] || '-') + '</div></div>';
+        if (emp['紧急联系人电话'] && emp['紧急联系人电话'].trim() && emp['紧急联系人电话'] !== '/') {
+            contactHtml += '<div class="info-item"><div class="label">联系电话</div><div class="value">' + emp['紧急联系人电话'] + '</div></div>';
+        }
+        contactInfoEl.innerHTML = contactHtml;
+    }
+    
+    // 工作经历
+    const workExpSection = document.getElementById('workExpSection');
+    const workExpContent = document.getElementById('workExpContent');
+    if (workExpSection && workExpContent) {
+        if (emp['工作经历'] && emp['工作经历'].trim() && emp['工作经历'] !== '/' && emp['工作经历'].trim() !== '') {
+            workExpContent.innerHTML = emp['工作经历'].replace(/\n/g, '<br>');
+            workExpSection.style.display = '';
+        } else {
+            workExpSection.style.display = 'none';
+        }
+    }
+    
+    // 备注
+    const remarkSection = document.getElementById('remarkSection');
+    const remarkContent = document.getElementById('remarkContent');
+    if (remarkSection && remarkContent) {
+        if (emp['备注'] && emp['备注'].trim() && emp['备注'] !== '/' && emp['备注'].trim() !== '') {
+            remarkContent.innerHTML = emp['备注'].replace(/\n/g, '<br>');
+            remarkSection.style.display = '';
+        } else {
+            remarkSection.style.display = 'none';
+        }
+    }
 }
 
 function renderTimeline(empId) {
@@ -3501,7 +3581,7 @@ function updatePerfTrendChart(emp) {
     const scores = trendData.map(d => d.grade ? getGradeScore(d.grade) : null);
     
     // Get annual performance data for diamond markers
-    const annualKeys = ['2024年度', '2025年度', '2026年度'];
+    const annualKeys = ['24年年度', '25年年度', '26年年度'];
     const annualData = annualKeys.map(key => ({
         key: key,
         grade: isValidPerf(emp[key]) ? emp[key] : null,
@@ -3544,7 +3624,7 @@ function updatePerfTrendChart(emp) {
     // Calculate positions for annual performance diamond markers
     // Place each annual marker after the Q4 of that year
     const annualPoints = annualData.map(d => {
-        const year = d.key.replace('年度', '');
+        const year = d.key.replace('年年度', '年').replace('年度', '');
         const q4Key = year + 'Q4';
         const q4Idx = quarters.indexOf(q4Key);
         if (q4Idx === -1) return null;
@@ -3629,7 +3709,7 @@ function updatePerfTrendChart(emp) {
         // Year label below diamond
         ctx.fillStyle = '#8fa8c8';
         ctx.font = '9px Microsoft YaHei';
-        ctx.fillText("'" + p.yearLabel.slice(2) + '年', p.x, p.y + 22);
+        ctx.fillText(p.yearLabel, p.x, p.y + 22);
     });
     
     // X-axis labels for quarters
@@ -3638,8 +3718,8 @@ function updatePerfTrendChart(emp) {
         ctx.fillStyle = '#8fa8c8';
         ctx.font = '9px Microsoft YaHei';
         ctx.textAlign = 'center';
-        // Simplified quarter label
-        ctx.fillText(q.replace('20', "'").replace('Q', 'Q'), x, h - padding.bottom + 20);
+        // Simplified quarter label (e.g., "24年Q1" -> "'24Q1")
+        ctx.fillText(q.replace('年', '').replace('24', "'24").replace('25', "'25").replace('26', "'26"), x, h - padding.bottom + 20);
     });
     
     // Render annual performance cards
@@ -3663,18 +3743,18 @@ function renderAnnualPerfCards(emp) {
     const container = document.getElementById('perfAnnualCards');
     if (!container) return;
     
-    const annualKeys = ['2024年度', '2025年度', '2026年度'];
+    const annualKeys = ['24年年度', '25年年度', '26年年度'];
     let html = '';
     
     annualKeys.forEach(key => {
         const grade = emp[key];
         if (!isValidPerf(grade)) return;
         
-        const year = key.replace('年度', '');
+        const year = key.replace('年年度', '年').replace('年度', '');
         const gradeClass = grade === 'A+' ? 'aplus' : grade.toLowerCase();
         
         html += '<div class="annual-perf-card">';
-        html += '<span class="year-label">' + year + '年</span>';
+        html += '<span class="year-label">' + year + '</span>';
         html += '<span class="grade-badge grade-' + gradeClass + '">' + grade + '</span>';
         html += '</div>';
     });
@@ -3712,9 +3792,9 @@ function updateTalentCompareChart(emp) {
     }
     
     // 获取各年份的九宫格位置
-    const pos2024 = isValidAssessment(emp['2024盘点结果']) ? getGridPosition(emp['2024盘点结果']) : null;
-    const pos2025 = isValidAssessment(emp['2025盘点结果']) ? getGridPosition(emp['2025盘点结果']) : null;
-    const pos2026 = isValidAssessment(emp['2026盘点结果']) ? getGridPosition(emp['2026盘点结果']) : null;
+    const pos2024 = isValidAssessment(emp['2024年盘点结果']) ? getGridPosition(emp['2024年盘点结果']) : null;
+    const pos2025 = isValidAssessment(emp['2025年盘点结果']) ? getGridPosition(emp['2025年盘点结果']) : null;
+    const pos2026 = null; // 2026盘点结果字段已从数据源移除
     
     // 绘制九宫格背景和分类名称
     for (let ri = 0; ri < 3; ri++) {
@@ -3887,19 +3967,19 @@ function updateTalentCompareChart(emp) {
     ctx.fillRect(w - 140, legendY, 12, 12);
     ctx.fillStyle = '#fff';
     ctx.font = '10px Microsoft YaHei';
-    ctx.fillText('2024: ' + (emp['2024盘点结果'] || '无'), w - 125, legendY + 10);
+    ctx.fillText('2024: ' + (emp['2024年盘点结果'] || '无'), w - 125, legendY + 10);
     legendY += 18;
     
     ctx.fillStyle = '#00ff88';
     ctx.fillRect(w - 140, legendY, 12, 12);
     ctx.fillStyle = '#fff';
-    ctx.fillText('2025: ' + (emp['2025盘点结果'] || '无'), w - 125, legendY + 10);
+    ctx.fillText('2025: ' + (emp['2025年盘点结果'] || '无'), w - 125, legendY + 10);
     legendY += 18;
     
     ctx.fillStyle = '#ffa500';
     ctx.fillRect(w - 140, legendY, 12, 12);
     ctx.fillStyle = '#fff';
-    ctx.fillText('2026: ' + (emp['2026盘点结果'] || '无'), w - 125, legendY + 10);
+    ctx.fillText('2026: ' + '/', w - 125, legendY + 10);
 }
 
 // ========== 搜索功能 ==========
@@ -4106,8 +4186,8 @@ function renderMobileEmployeeList() {
     
     // 先按部门权限过滤
     let employees = currentDeptPermission === 'all'
-        ? allEmployees.filter(e => e['状态'] !== '离职')
-        : allEmployees.filter(e => e['状态'] !== '离职' && e['一级部门'] === currentDeptPermission);
+        ? allEmployees.filter(e => e['用工状态'] !== '离职')
+        : allEmployees.filter(e => e['用工状态'] !== '离职' && e['一级部门'] === currentDeptPermission);
     
     // 部门筛选
     if (mobileCurrentDept) {
