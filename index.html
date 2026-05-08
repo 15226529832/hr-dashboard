@@ -367,12 +367,12 @@
         /* 异动时间线样式 */
         .timeline {
             position: relative;
-            padding-left: 30px;
+            padding-left: 40px;
         }
         .timeline::before {
             content: "";
             position: absolute;
-            left: 10px;
+            left: 14px;
             top: 0;
             bottom: 0;
             width: 2px;
@@ -383,23 +383,29 @@
             margin-bottom: 25px;
             padding-left: 25px;
         }
-        .timeline-item::before {
-            content: "";
+        .timeline-icon {
             position: absolute;
-            left: -25px;
-            top: 5px;
-            width: 14px;
-            height: 14px;
+            left: -32px;
+            top: 2px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border: 3px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            z-index: 2;
+            border: 2px solid;
             background: #1a2a4a;
         }
-        .timeline-item.type-entry::before { border-color: #00d4ff; }
-        .timeline-item.type-regular::before { border-color: #00aaff; }
-        .timeline-item.type-transfer::before { border-color: #ffa500; }
-        .timeline-item.type-promotion::before { border-color: #ffd700; }
-        .timeline-item.type-demotion::before { border-color: #ff6b6b; }
-        .timeline-item.type-leave::before { border-color: #888; }
+        .timeline-icon.type-promotion { border-color: #00ff88; background: rgba(0,255,136,0.15); }
+        .timeline-icon.type-demotion { border-color: #ff4444; background: rgba(255,68,68,0.15); }
+        .timeline-icon.type-dept-transfer { border-color: #00d4ff; background: rgba(0,212,255,0.15); }
+        .timeline-icon.type-position-adjust { border-color: #ffa500; background: rgba(255,165,0,0.15); }
+        .timeline-icon.type-entry { border-color: #8fa8c8; background: rgba(143,168,200,0.15); }
+        .timeline-icon.type-regular { border-color: #00ff88; background: rgba(0,255,136,0.15); }
+        .timeline-icon.type-leave { border-color: #ff6b6b; background: rgba(255,107,107,0.15); }
+        .timeline-icon.type-other { border-color: #8fa8c8; background: rgba(143,168,200,0.15); }
         
         .timeline-date {
             font-size: 12px;
@@ -414,12 +420,27 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
-        .timeline-type.type-entry { background: rgba(0,212,255,0.2); color: #00d4ff; }
-        .timeline-type.type-regular { background: rgba(0,170,255,0.2); color: #00aaff; }
-        .timeline-type.type-transfer { background: rgba(255,165,0,0.2); color: #ffa500; }
-        .timeline-type.type-promotion { background: rgba(255,215,0,0.2); color: #ffd700; }
-        .timeline-type.type-demotion { background: rgba(255,107,107,0.2); color: #ff6b6b; }
-        .timeline-type.type-leave { background: rgba(136,136,136,0.2); color: #888; }
+        .timeline-type.type-promotion { background: rgba(0,255,136,0.2); color: #00ff88; }
+        .timeline-type.type-demotion { background: rgba(255,68,68,0.2); color: #ff4444; }
+        .timeline-type.type-dept-transfer { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .timeline-type.type-position-adjust { background: rgba(255,165,0,0.2); color: #ffa500; }
+        .timeline-type.type-entry { background: rgba(143,168,200,0.2); color: #8fa8c8; }
+        .timeline-type.type-regular { background: rgba(0,255,136,0.2); color: #00ff88; }
+        .timeline-type.type-leave { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .timeline-type.type-other { background: rgba(143,168,200,0.15); color: #8fa8c8; }
+
+        /* 个人详情九宫格位置标记脉冲动画 */
+        @keyframes positionPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 212, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+        }
+        .detail-grid-marker {
+            position: absolute;
+            z-index: 10;
+            border-radius: 50%;
+            animation: positionPulse 2s infinite;
+        }
         
         .timeline-content {
             background: rgba(0,30,60,0.5);
@@ -844,19 +865,20 @@
             
             /* 异动时间线 - 已经是竖向的，无需修改结构 */
             .timeline {
-                padding-left: 25px;
+                padding-left: 35px;
             }
             .timeline::before {
-                left: 8px;
+                left: 11px;
             }
             .timeline-item {
                 margin-bottom: 20px;
                 padding-left: 20px;
             }
-            .timeline-item::before {
-                left: -20px;
-                width: 12px;
-                height: 12px;
+            .timeline-icon {
+                left: -28px;
+                width: 22px;
+                height: 22px;
+                font-size: 10px;
             }
             .timeline-date {
                 font-size: 11px;
@@ -1579,6 +1601,7 @@
         <div class="login-container">
             <div class="login-icon">🔐</div>
             <h2>员工全生命周期管理系统</h2>
+            <p style="color: #5a7a9a; font-size: 13px; margin-bottom: 15px;">请输入访问密码</p>
             <div class="login-input-wrap">
                 <input type="password" id="loginPassword" placeholder="请输入访问密码" autocomplete="off" autofocus>
             </div>
@@ -1788,8 +1811,16 @@
 
 <script>
 // ========== 密码验证模块 ==========
-const PASSWORD_HASH = '6e102fc7676960990eb3c2212b028767e112abf3e761928c4fed33f54e791300';
+// 多密码对应不同部门权限：哈希值 -> 部门权限
+const PASSWORD_MAP = {
+    '6e102fc7676960990eb3c2212b028767e112abf3e761928c4fed33f54e791300': 'all',           // hrbp2026 -> 全部部门（管理员）
+    'c2884ad98d3b4ff19da19a916cf8584e9a151728447b73ee28fd54c9aeaa01c7': '市场运营部',     // scyy2026 -> 市场运营部
+    '86e5f58847f3b8252e774064cadc78e6d9886d3bc9dfb2d42d5cbd8dbd36eaa8': '财务管理部',     // cwgl2026 -> 财务管理部
+    '1e671d31b6382a69bfba29dc5cc2709e4b413ee1e1675c54b9dd96174a72bbc6': '产融数字研究院', // crsz2026 -> 产融数字研究院
+    '0df02ea31e62327bf083dd530dd970843a22c4aa41137c980460bf1cb3eb697d': '董事会办公室'    // dsb2026 -> 董事会办公室
+};
 let isAuthenticated = false;
+let currentDeptPermission = 'all'; // 当前登录用户的部门权限
 
 // SHA-256 哈希函数（使用 Web Crypto API）
 async function sha256(message) {
@@ -1807,7 +1838,7 @@ async function handleLogin() {
     const password = input.value.trim();
 
     if (!password) {
-        errorEl.textContent = '请输入密码';
+        errorEl.textContent = '请输入访问密码';
         errorEl.classList.add('show');
         setTimeout(() => errorEl.classList.remove('show'), 400);
         return;
@@ -1818,9 +1849,11 @@ async function handleLogin() {
 
     try {
         const hash = await sha256(password);
-        if (hash === PASSWORD_HASH) {
+        if (PASSWORD_MAP.hasOwnProperty(hash)) {
             isAuthenticated = true;
+            currentDeptPermission = PASSWORD_MAP[hash];
             sessionStorage.setItem('hr_dashboard_auth', '1');
+            sessionStorage.setItem('hr_dashboard_dept', currentDeptPermission);
             const overlay = document.getElementById('loginOverlay');
             overlay.classList.add('fade-out');
             setTimeout(() => {
@@ -1855,6 +1888,7 @@ document.getElementById('loginPassword').addEventListener('keydown', function(e)
 (function checkAuth() {
     if (sessionStorage.getItem('hr_dashboard_auth') === '1') {
         isAuthenticated = true;
+        currentDeptPermission = sessionStorage.getItem('hr_dashboard_dept') || 'all';
         const overlay = document.getElementById('loginOverlay');
         overlay.style.display = 'none';
     }
@@ -2211,29 +2245,46 @@ function updateDateDisplay() {
 
 // ========== 动态生成部门筛选器 ==========
 function populateDeptFilters() {
-    // 获取所有一级部门（含在职和离职）
-    const depts = [...new Set(allEmployees.map(e => e['一级部门']).filter(d => d && d.trim()))].sort();
+    // 获取所有一级部门（含在职和离职），然后根据权限过滤
+    let depts = [...new Set(allEmployees.map(e => e['一级部门']).filter(d => d && d.trim()))].sort();
+    
+    // 根据部门权限过滤
+    if (currentDeptPermission !== 'all') {
+        depts = depts.filter(d => d === currentDeptPermission);
+    }
     
     // 填充桌面端下拉框
     const deptFilter = document.getElementById('deptFilter');
-    deptFilter.innerHTML = '<option value="">全部部门</option>';
-    depts.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept;
-        option.textContent = dept;
-        deptFilter.appendChild(option);
-    });
+    // 非管理员只看到一个部门，隐藏下拉框
+    if (currentDeptPermission !== 'all') {
+        deptFilter.style.display = 'none';
+        currentDept = currentDeptPermission;
+    } else {
+        deptFilter.style.display = '';
+        deptFilter.innerHTML = '<option value="">全部部门</option>';
+        depts.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept;
+            option.textContent = dept;
+            deptFilter.appendChild(option);
+        });
+    }
     
     // 填充移动端标签
     const mobileDeptTags = document.getElementById('mobileDeptTags');
-    mobileDeptTags.innerHTML = '<div class="mobile-dept-tag active" data-dept="">全部</div>';
-    depts.forEach(dept => {
-        const tag = document.createElement('div');
-        tag.className = 'mobile-dept-tag';
-        tag.dataset.dept = dept;
-        tag.textContent = dept;
-        mobileDeptTags.appendChild(tag);
-    });
+    if (currentDeptPermission !== 'all') {
+        // 非管理员：只显示该部门标签（激活状态）
+        mobileDeptTags.innerHTML = '<div class="mobile-dept-tag active" data-dept="' + currentDeptPermission + '">' + currentDeptPermission + '</div>';
+    } else {
+        mobileDeptTags.innerHTML = '<div class="mobile-dept-tag active" data-dept="">全部</div>';
+        depts.forEach(dept => {
+            const tag = document.createElement('div');
+            tag.className = 'mobile-dept-tag';
+            tag.dataset.dept = dept;
+            tag.textContent = dept;
+            mobileDeptTags.appendChild(tag);
+        });
+    }
     
     // 重新绑定移动端标签点击事件
     initMobileDeptTags();
@@ -2241,9 +2292,15 @@ function populateDeptFilters() {
 
 // ========== 筛选逻辑 ==========
 function updateDashboard() {
+    // 先按部门权限过滤
+    let baseEmployees = currentDeptPermission === 'all' 
+        ? allEmployees 
+        : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+    
+    // 再按当前选择的部门过滤（管理员可能选了特定部门）
     filteredEmployees = currentDept 
-        ? allEmployees.filter(e => e['一级部门'] === currentDept && e['状态'] !== '离职')
-        : allEmployees.filter(e => e['状态'] !== '离职');
+        ? baseEmployees.filter(e => e['一级部门'] === currentDept && e['状态'] !== '离职')
+        : baseEmployees.filter(e => e['状态'] !== '离职');
     
     updateMetrics();
     updateEduChart();
@@ -2268,7 +2325,7 @@ function updateMetrics() {
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     }).length;
     
-    const thisMonthLeave = allEmployees.filter(e => {
+    const thisMonthLeave = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
         if (e['状态'] !== '离职' || !e['离职日期']) return false;
         const d = new Date(e['离职日期']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
@@ -2349,56 +2406,101 @@ function updateEduChart() {
     });
     
     const colors = ['#00d4ff', '#00ff88', '#ffa500', '#ff6b6b', '#8fa8c8'];
+    const total = filteredEmployees.length;
     
-    const cx = canvas.width / dpr / 2;
-    const cy = canvas.height / dpr / 2;
-    const radius = Math.max(10, Math.min(cx, cy) - 40);
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    // 左侧为饼图区域，右侧为图例区域
+    const pieAreaW = w * 0.6;
+    const cx = pieAreaW / 2;
+    const cy = h / 2;
+    const radius = Math.max(10, Math.min(cx, cy) - 25);
+    const innerRadius = radius * 0.55; // 环形饼图内圈
     
     let startAngle = -Math.PI / 2;
+    // 记录每个扇形的角度和颜色，用于绘制内部百分比
+    const sliceInfos = [];
+    
     data.forEach((item, i) => {
-        const sliceAngle = (item[1] / filteredEmployees.length) * Math.PI * 2;
+        const sliceAngle = (item[1] / total) * Math.PI * 2;
+        const color = colors[i % colors.length];
         
-        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        gradient.addColorStop(0, colors[i % colors.length] + '80');
-        gradient.addColorStop(1, colors[i % colors.length]);
+        const gradient = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, radius);
+        gradient.addColorStop(0, color + '60');
+        gradient.addColorStop(1, color);
         
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
+        ctx.moveTo(cx + Math.cos(startAngle) * innerRadius, cy + Math.sin(startAngle) * innerRadius);
         ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+        ctx.arc(cx, cy, innerRadius, startAngle + sliceAngle, startAngle, true);
         ctx.closePath();
         ctx.fillStyle = gradient;
         ctx.fill();
         
-        const midAngle = startAngle + sliceAngle / 2;
-        const labelRadius = Math.max(10, radius + 30);
-        const labelX = cx + Math.cos(midAngle) * labelRadius;
-        const labelY = cy + Math.sin(midAngle) * labelRadius;
-        
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(midAngle) * radius, cy + Math.sin(midAngle) * radius);
-        ctx.lineTo(labelX, labelY);
-        ctx.strokeStyle = colors[i % colors.length];
-        ctx.lineWidth = 1;
+        // 扇形边框
+        ctx.strokeStyle = 'rgba(10,22,40,0.5)';
+        ctx.lineWidth = 2;
         ctx.stroke();
         
-        ctx.fillStyle = '#fff';
-        ctx.font = '12px Microsoft YaHei';
-        ctx.textAlign = midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? 'right' : 'left';
-        ctx.fillText(item[0], labelX + (midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? -5 : 5), labelY + 4);
-        ctx.fillStyle = colors[i % colors.length];
-        ctx.font = 'bold 14px Microsoft YaHei';
-        ctx.fillText(`${item[1]}人`, labelX + (midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? -5 : 5), labelY + 20);
+        // 在扇形内部显示百分比（如果扇形够大）
+        const percentage = ((item[1] / total) * 100).toFixed(0);
+        const midAngle = startAngle + sliceAngle / 2;
+        const textRadius = (radius + innerRadius) / 2;
+        const textX = cx + Math.cos(midAngle) * textRadius;
+        const textY = cy + Math.sin(midAngle) * textRadius;
+        
+        sliceInfos.push({ midAngle, sliceAngle, color, label: item[0], count: item[1], percentage });
+        
+        // 只有扇形角度大于15度才显示内部文字
+        if (sliceAngle > 0.26) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px Microsoft YaHei';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(percentage + '%', textX, textY);
+        }
         
         startAngle += sliceAngle;
     });
     
+    // 中心文字
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px Microsoft YaHei';
+    ctx.font = 'bold 22px Microsoft YaHei';
     ctx.textAlign = 'center';
-    ctx.fillText(filteredEmployees.length, cx, cy - 5);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total, cx, cy - 8);
     ctx.font = '12px Microsoft YaHei';
     ctx.fillStyle = '#8fa8c8';
-    ctx.fillText('在职员工', cx, cy + 15);
+    ctx.fillText('在职员工', cx, cy + 12);
+    
+    // 右侧图例
+    const legendX = pieAreaW + 15;
+    let legendY = h / 2 - (data.length * 28) / 2;
+    
+    data.forEach((item, i) => {
+        const color = colors[i % colors.length];
+        const percentage = ((item[1] / total) * 100).toFixed(1);
+        
+        // 颜色块
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(legendX, legendY, 14, 14, 3);
+        ctx.fill();
+        
+        // 文字标签
+        ctx.fillStyle = '#fff';
+        ctx.font = '13px Microsoft YaHei';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item[0], legendX + 20, legendY + 7);
+        
+        // 人数和百分比
+        ctx.fillStyle = '#8fa8c8';
+        ctx.font = '11px Microsoft YaHei';
+        ctx.fillText(`${item[1]}人 (${percentage}%)`, legendX + 20, legendY + 22);
+        
+        legendY += 36;
+    });
 }
 
 // ========== 司龄分布柱状图 ==========
@@ -2581,13 +2683,13 @@ function updateTrendChart() {
         const monthStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
         months.push(monthStr);
         
-        const joinCount = allEmployees.filter(e => {
+        const joinCount = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
             const jd = new Date(e['入职日期']);
             return jd.getFullYear() === d.getFullYear() && jd.getMonth() === d.getMonth();
         }).length;
         joinData.push(joinCount);
         
-        const leaveCount = allEmployees.filter(e => {
+        const leaveCount = (currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission)).filter(e => {
             if (e['状态'] !== '离职' || !e['离职日期']) return false;
             const ld = new Date(e['离职日期']);
             return ld.getFullYear() === d.getFullYear() && ld.getMonth() === d.getMonth();
@@ -3064,7 +3166,8 @@ function showLeavePopup() {
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
-    const leaveList = allEmployees.filter(e => {
+    const leaveSource = currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+    const leaveList = leaveSource.filter(e => {
         if (e['状态'] !== '离职' || !e['离职日期']) return false;
         const d = new Date(e['离职日期']);
         return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
@@ -3299,19 +3402,44 @@ function renderTimeline(empId) {
         return new Date(b['异动日期']) - new Date(a['异动日期']);
     });
     
-    const typeMap = {
-        '入职': 'entry',
-        '转正': 'regular',
-        '调岗': 'transfer',
-        '晋升': 'promotion',
-        '降级': 'demotion',
-        '离职': 'leave'
-    };
+    // 异动类型分类：图标、颜色、CSS类名、显示名称
+    function classifyChange(change) {
+        const type = (change['异动类型'] || '').trim();
+        
+        // 先按类型字段关键词匹配
+        if (type.includes('晋升')) return { icon: '🔺', color: '#00ff88', cls: 'type-promotion', label: type || '晋升' };
+        if (type.includes('降级')) return { icon: '🔻', color: '#ff4444', cls: 'type-demotion', label: type || '降级' };
+        if (type.includes('入职')) return { icon: '📥', color: '#8fa8c8', cls: 'type-entry', label: type || '入职' };
+        if (type.includes('转正')) return { icon: '✅', color: '#00ff88', cls: 'type-regular', label: type || '转正' };
+        if (type.includes('离职')) return { icon: '📤', color: '#ff6b6b', cls: 'type-leave', label: type || '离职' };
+        if (type.includes('调岗') || type.includes('调动')) {
+            // 进一步区分部门调动和岗位调整
+            const deptChanged = change['异动前部门'] !== change['异动后部门'];
+            if (deptChanged) return { icon: '➡️', color: '#00d4ff', cls: 'type-dept-transfer', label: type || '部门调动' };
+            return { icon: '🔄', color: '#ffa500', cls: 'type-position-adjust', label: type || '岗位调整' };
+        }
+        
+        // 如果类型为空，根据前后部门/岗位变化自动判断
+        if (!type || type === '/') {
+            const deptChanged = change['异动前部门'] && change['异动后部门'] && change['异动前部门'] !== change['异动后部门'];
+            const posChanged = change['异动前岗位'] && change['异动后岗位'] && change['异动前岗位'] !== change['异动后岗位'];
+            if (deptChanged) return { icon: '➡️', color: '#00d4ff', cls: 'type-dept-transfer', label: '部门调动' };
+            if (posChanged) return { icon: '🔄', color: '#ffa500', cls: 'type-position-adjust', label: '岗位调整' };
+            return { icon: '📋', color: '#8fa8c8', cls: 'type-other', label: '其他' };
+        }
+        
+        // 其他未匹配类型，尝试根据变化判断
+        const deptChanged = change['异动前部门'] && change['异动后部门'] && change['异动前部门'] !== change['异动后部门'];
+        const posChanged = change['异动前岗位'] && change['异动后岗位'] && change['异动前岗位'] !== change['异动后岗位'];
+        if (deptChanged) return { icon: '➡️', color: '#00d4ff', cls: 'type-dept-transfer', label: type };
+        if (posChanged) return { icon: '🔄', color: '#ffa500', cls: 'type-position-adjust', label: type };
+        return { icon: '📋', color: '#8fa8c8', cls: 'type-other', label: type };
+    }
     
     let html = '<div class="timeline">';
     
     sortedChanges.forEach(change => {
-        const typeClass = typeMap[change['异动类型']] || 'regular';
+        const info = classifyChange(change);
         
         // 构建变化详情
         let changeDetail = '';
@@ -3333,9 +3461,10 @@ function renderTimeline(empId) {
         }
         
         html += `
-            <div class="timeline-item type-${typeClass}">
+            <div class="timeline-item">
+                <div class="timeline-icon ${info.cls}">${info.icon}</div>
                 <div class="timeline-date">${change['异动日期']}</div>
-                <div class="timeline-type type-${typeClass}">${change['异动类型']}</div>
+                <div class="timeline-type ${info.cls}">${info.label}</div>
                 <div class="timeline-content">
                     ${changeDetail ? `<div class="timeline-change">${changeDetail}</div>` : ''}
                     ${change['备注'] ? `<div class="timeline-remark">${change['备注']}</div>` : ''}
@@ -3609,16 +3738,38 @@ function updateTalentCompareChart(emp) {
         }
     }
     
-    // 标记2024位置
+    // 标记2024位置（带脉冲动画效果）
     if (pos2024) {
         const x = padding.left + pos2024.col * cellW;
         const y = padding.top + pos2024.row * cellH;
         ctx.fillStyle = 'rgba(0,180,255,0.3)';
         ctx.fillRect(x + 5, y + 5, cellW - 10, cellH - 10);
+        // 绘制圆圈标记
+        const markerX = x + cellW / 2;
+        const markerY = y + cellH / 2 + 6;
+        // 脉冲外圈
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,180,255,0.2)';
+        ctx.fill();
+        // 实心圆
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,180,255,0.6)';
+        ctx.fill();
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // 年份文字（带半透明背景遮罩）
+        ctx.fillStyle = 'rgba(10,22,40,0.7)';
+        const textW = 36;
+        const textH = 16;
+        ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#00d4ff';
         ctx.font = 'bold 12px Microsoft YaHei';
         ctx.textAlign = 'center';
-        ctx.fillText('2024', x + cellW / 2, y + cellH / 2 + 6);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('2024', markerX, markerY);
     }
     
     // 标记2025位置
@@ -3627,10 +3778,32 @@ function updateTalentCompareChart(emp) {
         const y = padding.top + pos2025.row * cellH;
         ctx.fillStyle = 'rgba(0,255,136,0.3)';
         ctx.fillRect(x + 10, y + 10, cellW - 20, cellH - 20);
+        // 绘制圆圈标记
+        const markerX = x + cellW / 2;
+        const markerY = y + cellH / 2 + 6;
+        // 脉冲外圈
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,255,136,0.2)';
+        ctx.fill();
+        // 实心圆
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,255,136,0.6)';
+        ctx.fill();
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // 年份文字（带半透明背景遮罩）
+        ctx.fillStyle = 'rgba(10,22,40,0.7)';
+        const textW = 36;
+        const textH = 16;
+        ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#00ff88';
         ctx.font = 'bold 12px Microsoft YaHei';
         ctx.textAlign = 'center';
-        ctx.fillText('2025', x + cellW / 2, y + cellH / 2 + 6);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('2025', markerX, markerY);
     }
     
     // 标记2026位置
@@ -3639,10 +3812,32 @@ function updateTalentCompareChart(emp) {
         const y = padding.top + pos2026.row * cellH;
         ctx.fillStyle = 'rgba(255,165,0,0.3)';
         ctx.fillRect(x + 15, y + 15, cellW - 30, cellH - 30);
+        // 绘制圆圈标记
+        const markerX = x + cellW / 2;
+        const markerY = y + cellH / 2 + 6;
+        // 脉冲外圈
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,165,0,0.2)';
+        ctx.fill();
+        // 实心圆
+        ctx.beginPath();
+        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,165,0,0.6)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffa500';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // 年份文字（带半透明背景遮罩）
+        ctx.fillStyle = 'rgba(10,22,40,0.7)';
+        const textW = 36;
+        const textH = 16;
+        ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#ffa500';
         ctx.font = 'bold 12px Microsoft YaHei';
         ctx.textAlign = 'center';
-        ctx.fillText('2026', x + cellW / 2, y + cellH / 2 + 6);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('2026', markerX, markerY);
     }
     
     // 绘制移动箭头（2024→2025→2026）
@@ -3718,7 +3913,12 @@ function initSearch() {
             return;
         }
         
-        const matches = allEmployees.filter(e => 
+        // 先按部门权限过滤搜索范围
+        let searchPool = currentDeptPermission === 'all'
+            ? allEmployees
+            : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+        
+        const matches = searchPool.filter(e => 
             e['工号'].toLowerCase().includes(query) ||
             e['姓名'].toLowerCase().includes(query)
         ).slice(0, 10);
@@ -3902,7 +4102,10 @@ function renderMobileEmployeeList() {
     const container = document.getElementById('mobileCardContainer');
     const countEl = document.getElementById('mobileEmployeeCount');
     
-    let employees = allEmployees.filter(e => e['状态'] !== '离职');
+    // 先按部门权限过滤
+    let employees = currentDeptPermission === 'all'
+        ? allEmployees.filter(e => e['状态'] !== '离职')
+        : allEmployees.filter(e => e['状态'] !== '离职' && e['一级部门'] === currentDeptPermission);
     
     // 部门筛选
     if (mobileCurrentDept) {
