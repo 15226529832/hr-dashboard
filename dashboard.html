@@ -3397,7 +3397,7 @@
             <div class="login-input-wrap">
                 <input type="password" id="loginPassword" placeholder="请输入访问密码" autocomplete="off" autofocus>
             </div>
-            <button class="login-btn" id="loginBtn" onclick="handleLogin()">登 录</button>
+            <button class="login-btn" id="loginBtn" onclick="try{console.log('BTN CLICKED');handleLogin();}catch(e){console.error('LOGIN ERROR:',e);document.getElementById('loginError').textContent='错误:'+e.message;document.getElementById('loginError').classList.add('show');}">登 录</button>
             <div class="login-error" id="loginError"></div>
             <div class="login-footer">本系统仅限授权人员访问</div>
         </div>
@@ -3900,6 +3900,7 @@ async function sha256(message) {
 
 // 处理登录
 async function handleLogin() {
+    console.log("handleLogin called");
     const input = document.getElementById('loginPassword');
     const errorEl = document.getElementById('loginError');
     const btn = document.getElementById('loginBtn');
