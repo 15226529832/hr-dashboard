@@ -2,8 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>员工全生命周期管理大屏</title>
+    <title>员工全生命周期管理大屏 v3</title>
     <style>
         * {
             margin: 0;
@@ -4394,7 +4397,7 @@ function updateDashboard() {
     // 先按部门权限过滤
     let baseEmployees = currentDeptPermission === 'all' 
         ? allEmployees 
-        : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+        : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
     
     // 再按当前选择的部门过滤（管理员可能选了特定部门）
     filteredEmployees = currentDept 
@@ -5266,7 +5269,7 @@ function showLeavePopup() {
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
-    const leaveSource = currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+    const leaveSource = currentDeptPermission === 'all' ? allEmployees : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
     const leaveList = leaveSource.filter(e => {
         if (e['用工状态'] !== '离职' || !e['离职日期']) return false;
         const d = new Date(e['离职日期']);
@@ -6067,7 +6070,7 @@ function initSearch() {
         // 先按部门权限过滤搜索范围
         let searchPool = currentDeptPermission === 'all'
             ? allEmployees
-            : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+            : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
         
         const matches = searchPool.filter(e => 
             e['工号'].toLowerCase().includes(query) ||
@@ -6258,7 +6261,7 @@ function renderMobileEmployeeList() {
     // 先按部门权限过滤
     let employees = currentDeptPermission === 'all'
         ? allEmployees.filter(e => e['用工状态'] !== '离职')
-        : allEmployees.filter(e => e['用工状态'] !== '离职' && e['一级部门'] === currentDeptPermission);
+        : allEmployees.filter(e => e['用工状态'] !== '离职' && hasDeptAccess(e['一级部门']));
     
     // 部门筛选
     if (mobileCurrentDept) {
@@ -6510,7 +6513,7 @@ function updateTeamDynamics() {
     // 基于权限的员工数据
     let baseEmployees = currentDeptPermission === 'all'
         ? allEmployees
-        : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+        : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
     
     let activeEmployees = baseEmployees.filter(e => e['用工状态'] !== '离职');
     
@@ -7067,7 +7070,7 @@ function initRoster() {
 function getRosterData() {
     let data = currentDeptPermission === 'all' 
         ? [...allEmployees] 
-        : allEmployees.filter(e => e['一级部门'] === currentDeptPermission);
+        : allEmployees.filter(e => hasDeptAccess(e['一级部门']));
     
     // 搜索
     const search = (document.getElementById('rosterSearch')?.value || '').trim().toLowerCase();
@@ -7123,10 +7126,10 @@ function renderRoster() {
         }
         
         const perfHTML = recentPerfs.length > 0 
-            ? '<span style="cursor:pointer;" onclick="event.stopPropagation();showRosterPerfPopup('' + emp['工号'] + '')">' + recentPerfs.map(p => getPerfTagHTML(p.grade)).join(' ') + '</span>'
+            ? '<span style="cursor:pointer;" data-roster-perf="' + emp['工号'] + '">' + recentPerfs.map(p => getPerfTagHTML(p.grade)).join(' ') + '</span>'
             : '<span style="color:#bfbfbf;">-</span>';
         
-        return '<tr' + trClass + ' onclick="rosterRowClick('' + emp['工号'] + '')">' +
+        return '<tr' + trClass + ' data-roster-row="' + emp['工号'] + '">' +
             '<td>' + (emp['工号'] || '-') + '</td>' +
             '<td style="font-weight:500;">' + (emp['姓名'] || '-') + '</td>' +
             '<td>' + (emp['一级部门'] || '-') + '</td>' +
@@ -7183,6 +7186,21 @@ function goRosterPage(page) {
     renderRoster();
     document.getElementById('wsPageRoster')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// 花名册事件委托
+document.addEventListener("click", function(e) {
+    var perfEl = e.target.closest("[data-roster-perf]");
+    if (perfEl) {
+        e.stopPropagation();
+        showRosterPerfPopup(perfEl.getAttribute("data-roster-perf"));
+        return;
+    }
+    var rowEl = e.target.closest("[data-roster-row]");
+    if (rowEl) {
+        rosterRowClick(rowEl.getAttribute("data-roster-row"));
+        return;
+    }
+});
 
 function rosterRowClick(empId) {
     // 切换到全景大屏并打开详情
