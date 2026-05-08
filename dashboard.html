@@ -6,7 +6,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>员工全生命周期管理大屏 v2</title>
+    <title>员工全生命周期管理大屏 v3</title>
     <style>
         * {
             margin: 0;
@@ -7129,10 +7129,10 @@ function renderRoster() {
         }
         
         const perfHTML = recentPerfs.length > 0 
-            ? '<span style="cursor:pointer;" onclick="event.stopPropagation();showRosterPerfPopup(\'' + emp['工号'] + '\')">' + recentPerfs.map(p => getPerfTagHTML(p.grade)).join(' ') + '</span>'
+            ? '<span style="cursor:pointer;" data-roster-perf="' + emp['工号'] + '">' + recentPerfs.map(p => getPerfTagHTML(p.grade)).join(' ') + '</span>'
             : '<span style="color:#bfbfbf;">-</span>';
         
-        return '<tr' + trClass + ' onclick="rosterRowClick(\'' + emp['工号'] + '\')">' +
+        return '<tr' + trClass + ' data-roster-row="' + emp['工号'] + '">' +
             '<td>' + (emp['工号'] || '-') + '</td>' +
             '<td style="font-weight:500;">' + (emp['姓名'] || '-') + '</td>' +
             '<td>' + (emp['一级部门'] || '-') + '</td>' +
@@ -7189,6 +7189,21 @@ function goRosterPage(page) {
     renderRoster();
     document.getElementById('wsPageRoster')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// 花名册事件委托
+document.addEventListener("click", function(e) {
+    var perfEl = e.target.closest("[data-roster-perf]");
+    if (perfEl) {
+        e.stopPropagation();
+        showRosterPerfPopup(perfEl.getAttribute("data-roster-perf"));
+        return;
+    }
+    var rowEl = e.target.closest("[data-roster-row]");
+    if (rowEl) {
+        rosterRowClick(rowEl.getAttribute("data-roster-row"));
+        return;
+    }
+});
 
 function rosterRowClick(empId) {
     // 切换到全景大屏并打开详情
