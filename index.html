@@ -3730,11 +3730,11 @@ function updateTalentCompareChart(emp) {
             ctx.fillStyle = color + '18';
             ctx.fillRect(x + 2, y + 2, cellW - 4, cellH - 4);
             
-            // 分类名称
-            ctx.fillStyle = color + '80';
-            ctx.font = '10px Microsoft YaHei';
+            // 分类名称（移到格子顶部，避免与年份标记重叠）
+            ctx.fillStyle = color + '60';
+            ctx.font = '9px Microsoft YaHei';
             ctx.textAlign = 'center';
-            ctx.fillText(cat, x + cellW / 2, y + cellH / 2 - 8);
+            ctx.fillText(cat, x + cellW / 2, y + 14);
         }
     }
     
@@ -3742,31 +3742,31 @@ function updateTalentCompareChart(emp) {
     if (pos2024) {
         const x = padding.left + pos2024.col * cellW;
         const y = padding.top + pos2024.row * cellH;
-        ctx.fillStyle = 'rgba(0,180,255,0.3)';
+        ctx.fillStyle = 'rgba(0,180,255,0.15)';
         ctx.fillRect(x + 5, y + 5, cellW - 10, cellH - 10);
         // 绘制圆圈标记
         const markerX = x + cellW / 2;
-        const markerY = y + cellH / 2 + 6;
+        const markerY = y + cellH / 2 + 8;
         // 脉冲外圈
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.arc(markerX, markerY, 16, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,180,255,0.2)';
         ctx.fill();
         // 实心圆
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,180,255,0.6)';
+        ctx.arc(markerX, markerY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,180,255,0.7)';
         ctx.fill();
         ctx.strokeStyle = '#00d4ff';
         ctx.lineWidth = 2;
         ctx.stroke();
         // 年份文字（带半透明背景遮罩）
-        ctx.fillStyle = 'rgba(10,22,40,0.7)';
-        const textW = 36;
-        const textH = 16;
+        ctx.fillStyle = 'rgba(10,22,40,0.8)';
+        const textW = 34;
+        const textH = 14;
         ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#00d4ff';
-        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.font = 'bold 11px Microsoft YaHei';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('2024', markerX, markerY);
@@ -3776,31 +3776,31 @@ function updateTalentCompareChart(emp) {
     if (pos2025) {
         const x = padding.left + pos2025.col * cellW;
         const y = padding.top + pos2025.row * cellH;
-        ctx.fillStyle = 'rgba(0,255,136,0.3)';
+        ctx.fillStyle = 'rgba(0,255,136,0.15)';
         ctx.fillRect(x + 10, y + 10, cellW - 20, cellH - 20);
         // 绘制圆圈标记
         const markerX = x + cellW / 2;
-        const markerY = y + cellH / 2 + 6;
+        const markerY = y + cellH / 2 + 8;
         // 脉冲外圈
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.arc(markerX, markerY, 16, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,255,136,0.2)';
         ctx.fill();
         // 实心圆
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,255,136,0.6)';
+        ctx.arc(markerX, markerY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,255,136,0.7)';
         ctx.fill();
         ctx.strokeStyle = '#00ff88';
         ctx.lineWidth = 2;
         ctx.stroke();
         // 年份文字（带半透明背景遮罩）
-        ctx.fillStyle = 'rgba(10,22,40,0.7)';
-        const textW = 36;
-        const textH = 16;
+        ctx.fillStyle = 'rgba(10,22,40,0.8)';
+        const textW = 34;
+        const textH = 14;
         ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#00ff88';
-        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.font = 'bold 11px Microsoft YaHei';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('2025', markerX, markerY);
@@ -3810,31 +3810,31 @@ function updateTalentCompareChart(emp) {
     if (pos2026) {
         const x = padding.left + pos2026.col * cellW;
         const y = padding.top + pos2026.row * cellH;
-        ctx.fillStyle = 'rgba(255,165,0,0.3)';
+        ctx.fillStyle = 'rgba(255,165,0,0.15)';
         ctx.fillRect(x + 15, y + 15, cellW - 30, cellH - 30);
         // 绘制圆圈标记
         const markerX = x + cellW / 2;
-        const markerY = y + cellH / 2 + 6;
+        const markerY = y + cellH / 2 + 8;
         // 脉冲外圈
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 18, 0, Math.PI * 2);
+        ctx.arc(markerX, markerY, 16, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,165,0,0.2)';
         ctx.fill();
         // 实心圆
         ctx.beginPath();
-        ctx.arc(markerX, markerY, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,165,0,0.6)';
+        ctx.arc(markerX, markerY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,165,0,0.7)';
         ctx.fill();
         ctx.strokeStyle = '#ffa500';
         ctx.lineWidth = 2;
         ctx.stroke();
         // 年份文字（带半透明背景遮罩）
-        ctx.fillStyle = 'rgba(10,22,40,0.7)';
-        const textW = 36;
-        const textH = 16;
+        ctx.fillStyle = 'rgba(10,22,40,0.8)';
+        const textW = 34;
+        const textH = 14;
         ctx.fillRect(markerX - textW/2, markerY - textH/2, textW, textH);
         ctx.fillStyle = '#ffa500';
-        ctx.font = 'bold 12px Microsoft YaHei';
+        ctx.font = 'bold 11px Microsoft YaHei';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('2026', markerX, markerY);
