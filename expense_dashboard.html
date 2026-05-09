@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>费用合理性分析看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e27;--bg2:#0f1435;--bg3:#141940;--border:#1e2a5a;--accent:#00d4ff;--accent2:#00f0a0;--warn:#ff6b6b;--orange:#ff9f43;--purple:#a55eea;--text:#e0e6f0;--text2:#8892b0;--card:rgba(15,20,53,0.85)}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+.bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0}
+.bg-glow{position:fixed;top:-30%;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(0,212,255,0.08),transparent 70%);pointer-events:none;z-index:0}
+#pwd-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column}
+#pwd-screen h2{color:var(--accent);font-size:28px;margin-bottom:24px;letter-spacing:4px}
+#pwd-input{width:280px;padding:12px 20px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:16px;outline:none;text-align:center}
+#pwd-input:focus{border-color:var(--accent);box-shadow:0 0 15px rgba(0,212,255,0.2)}
+#pwd-btn{margin-top:16px;padding:10px 40px;background:linear-gradient(135deg,var(--accent),#0088cc);color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;letter-spacing:2px}
+#pwd-btn:hover{opacity:0.9}
+#pwd-error{color:var(--warn);margin-top:12px;font-size:14px;display:none}
+#main{display:none;position:relative;z-index:1;min-height:100vh;padding:12px 20px 20px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.header h1{font-size:26px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:6px}
+.header-right{display:flex;gap:16px;align-items:center}
+.filter-group{display:flex;gap:6px}
+.filter-btn{padding:6px 16px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all 0.3s}
+.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.1);box-shadow:0 0 10px rgba(0,212,255,0.15)}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+#dept-select{padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:13px;outline:none}
+.cards-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:transform 0.3s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px}
+.stat-card.c1::before{background:var(--accent)}.stat-card.c2::before{background:var(--accent2)}.stat-card.c3::before{background:var(--orange)}.stat-card.c4::before{background:var(--purple)}.stat-card.c5::before{background:var(--warn)}
+.stat-card .label{font-size:13px;color:var(--text2);margin-bottom:6px}
+.stat-card .value{font-size:28px;font-weight:700;font-family:'DIN','Roboto Mono',monospace}
+.stat-card .sub{font-size:12px;color:var(--text2);margin-top:4px}
+.stat-card.c1 .value{color:var(--accent)}.stat-card.c2 .value{color:var(--accent2)}.stat-card.c3 .value{color:var(--orange)}.stat-card.c4 .value{color:var(--purple)}.stat-card.c5 .value{color:var(--warn)}
+.stat-card .icon-bg{position:absolute;right:10px;bottom:5px;font-size:50px;opacity:0.06}
+.row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:16px}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative}
+.chart-box h3{font-size:14px;color:var(--text2);margin-bottom:10px;padding-left:10px;border-left:3px solid var(--accent)}
+.chart-tabs{display:flex;gap:4px;margin-bottom:8px}
+.chart-tab{padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text2);cursor:pointer;transition:all 0.2s}
+.chart-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.08)}
+.row3{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:16px}
+.anomaly-box{max-height:340px;overflow-y:auto}
+.anomaly-box::-webkit-scrollbar{width:4px}
+.anomaly-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.anomaly-table{width:100%;border-collapse:collapse;font-size:12px}
+.anomaly-table th{position:sticky;top:0;background:var(--bg3);color:var(--accent);padding:8px 6px;text-align:left;border-bottom:1px solid var(--border);font-weight:500;z-index:1}
+.anomaly-table td{padding:6px;border-bottom:1px solid rgba(30,42,90,0.5);color:var(--text2)}
+.anomaly-table tr:hover td{background:rgba(0,212,255,0.03);color:var(--text)}
+.severity-high{color:var(--warn)!important;font-weight:600}.severity-mid{color:var(--orange)!important}.severity-low{color:var(--accent)!important}
+.badge{display:inline-block;padding:1px 8px;border-radius:3px;font-size:11px;font-weight:500}
+.badge-high{background:rgba(255,107,107,0.15);color:var(--warn);border:1px solid rgba(255,107,107,0.3)}
+.badge-mid{background:rgba(255,159,67,0.15);color:var(--orange);border:1px solid rgba(255,159,67,0.3)}
+.badge-low{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.3)}
+.bottom-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px}
+.bottom-section h3{font-size:14px;color:var(--text2);margin-bottom:10px;padding-left:10px;border-left:3px solid var(--accent2);cursor:pointer;display:flex;align-items:center;gap:8px}
+.bottom-section h3 .arrow{transition:transform 0.3s;font-size:12px}
+.bottom-section h3 .arrow.collapsed{transform:rotate(-90deg)}
+.emp-table-wrap{overflow-x:auto;transition:max-height 0.4s ease}
+.emp-table-wrap.collapsed{max-height:0;overflow:hidden}
+.emp-table{width:100%;border-collapse:collapse;font-size:12px}
+.emp-table th{background:var(--bg3);color:var(--accent);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;font-weight:500}
+.emp-table td{padding:6px 10px;border-bottom:1px solid rgba(30,42,90,0.4);color:var(--text2)}
+.emp-table tr:hover td{background:rgba(0,212,255,0.03);color:var(--text)}
+.dept-group td{background:var(--bg3)!important;color:var(--accent)!important;font-weight:600;font-size:13px;border-bottom:1px solid var(--border)}
+.emp-table .anomaly-count{color:var(--warn);font-weight:600}
+.emp-table .anomaly-zero{color:var(--accent2)}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;position:relative}
+.modal-box h3{color:var(--accent);margin-bottom:16px;font-size:18px}
+.modal-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer}
+.detail-item{margin-bottom:10px;font-size:14px}.detail-item .dl{color:var(--text2);margin-right:8px}
+#loading{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9998;color:var(--accent);font-size:16px;letter-spacing:2px}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:1200px){.cards-row{grid-template-columns:repeat(3,1fr)}.row2,.row3{grid-template-columns:1fr}}
+@media(max-width:768px){.cards-row{grid-template-columns:repeat(2,1fr)}.header h1{font-size:20px;letter-spacing:2px}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div id="pwd-screen">
+  <h2>🔒 费用分析看板</h2>
+  <input type="password" id="pwd-input" placeholder="请输入访问密码" autocomplete="off">
+  <button id="pwd-btn" onclick="checkPwd()">进 入</button>
+  <div id="pwd-error">密码错误，请重试</div>
+</div>
+<div id="loading" style="display:none"><div class="spinner"></div>数据加载中...</div>
+<div id="main">
+  <div class="header">
+    <h1>费用合理性分析看板</h1>
+    <div class="header-right">
+      <div class="filter-group" id="month-filter">
+        <button class="filter-btn" data-month="1">1月</button>
+        <button class="filter-btn" data-month="2">2月</button>
+        <button class="filter-btn" data-month="3">3月</button>
+        <button class="filter-btn active" data-month="all">全部</button>
+      </div>
+      <select id="dept-select"><option value="all">全部部门</option></select>
+    </div>
+  </div>
+  <div class="cards-row">
+    <div class="stat-card c1"><div class="label">费用总额</div><div class="value" id="v-total">--</div><div class="sub" id="v-total-sub"></div><div class="icon-bg">&#x1F4B0;</div></div>
+    <div class="stat-card c2"><div class="label">打车费用</div><div class="value" id="v-taxi">--</div><div class="sub" id="v-taxi-sub"></div><div class="icon-bg">&#x1F697;</div></div>
+    <div class="stat-card c3"><div class="label">差旅费用</div><div class="value" id="v-travel">--</div><div class="sub" id="v-travel-sub"></div><div class="icon-bg">&#x2708;</div></div>
+    <div class="stat-card c4"><div class="label">加班餐费用</div><div class="value" id="v-meal">--</div><div class="sub" id="v-meal-sub"></div><div class="icon-bg">&#x1F371;</div></div>
+    <div class="stat-card c5"><div class="label">异常条数</div><div class="value" id="v-anomaly">--</div><div class="sub" id="v-anomaly-sub"></div><div class="icon-bg">&#x26A0;</div></div>
+  </div>
+  <div class="row2">
+    <div class="chart-box">
+      <h3>二级部门费用对比</h3>
+      <div class="chart-tabs" id="dept-chart-tabs">
+        <button class="chart-tab active" data-type="all">全部</button>
+        <button class="chart-tab" data-type="taxi">打车</button>
+        <button class="chart-tab" data-type="travel">差旅</button>
+        <button class="chart-tab" data-type="meal">加班餐</button>
+        <button class="chart-tab" data-type="vas">增值服务</button>
+      </div>
+      <div id="chart-dept" style="width:100%;height:280px"></div>
+    </div>
+    <div class="chart-box">
+      <h3>打车分类占比</h3>
+      <div id="chart-taxi-pie" style="width:100%;height:320px"></div>
+    </div>
+  </div>
+  <div class="row3">
+    <div class="chart-box">
+      <h3>月度费用趋势</h3>
+      <div id="chart-trend" style="width:100%;height:320px"></div>
+    </div>
+    <div class="chart-box">
+      <h3>异常清单</h3>
+      <div class="anomaly-box" id="anomaly-box">
+        <table class="anomaly-table" id="anomaly-table">
+          <thead><tr><th>员工</th><th>部门</th><th>类型</th><th>详情</th><th>金额</th><th>日期</th></tr></thead>
+          <tbody id="anomaly-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-section">
+    <h3 onclick="toggleEmpTable()"><span class="arrow" id="emp-arrow">&#x25BC;</span> 员工级费用明细</h3>
+    <div class="emp-table-wrap" id="emp-wrap">
+      <table class="emp-table">
+        <thead><tr><th>部门</th><th>员工</th><th>打车总额</th><th>差旅总额</th><th>加班餐总额</th><th>增值服务</th><th>差旅补贴</th><th>异常条数</th></tr></thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    <h3 id="modal-title">详细信息</h3>
+    <div id="modal-content"></div>
+  </div>
+</div>
+<script>
+// ===== PASSWORD =====
+function checkPwd(){
+  var v=document.getElementById('pwd-input').value;
+  if(v==='gelinying0606'){document.getElementById('pwd-screen').style.display='none';document.getElementById('main').style.display='block';initDashboard();}
+  else{document.getElementById('pwd-error').style.display='block';setTimeout(function(){document.getElementById('pwd-error').style.display='none';},2000);}
+}
+document.getElementById('pwd-input').addEventListener('keyup',function(e){if(e.key==='Enter')checkPwd()});
+
+// ===== GLOBALS =====
+var ALL_DATA={taxi:[],hotel:[],flight:[],train:[],vas:[],meal:[],travel:[],overtime:[],subsidy:[],finance:[]};
+var ANOMALIES=[];
+var currentMonth='all';
+var currentDept='all';
+var currentDeptChartType='all';
+var LIU_CHANGBO='00007';
+var BAI_HUA='00146';
+var LIZE_KEYWORDS=['丽泽'];
+var DEPT2_MAP={};
+var EMP_INFO={};
+
+// ===== CSV PARSER (robust) =====
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+  var rows=[];var row=[];var field='';var inQ=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQ){
+      if(c==='"'){
+        if(i+1<text.length&&text[i+1]==='"'){field+='"';i++;}
+        else inQ=false;
+      } else field+=c;
+    } else {
+      if(c==='"'){inQ=true;}
+      else if(c===','){row.push(field.trim());field='';}
+      else if(c==='\r'){
+        if(i+1<text.length&&text[i+1]==='\n')i++;
+        row.push(field.trim());field='';
+        if(row.some(function(x){return x!=='';}))rows.push(row);
+        row=[];
+      } else if(c==='\n'){
+        row.push(field.trim());field='';
+        if(row.some(function(x){return x!=='';}))rows.push(row);
+        row=[];
+      } else field+=c;
+    }
+  }
+  // last field/row
+  if(field||row.length>0){row.push(field.trim());if(row.some(function(x){return x!=='';}))rows.push(row);}
+  if(rows.length<2)return[];
+  var headers=rows[0];
+  var result=[];
+  for(var ri=1;ri<rows.length;ri++){
+    var obj={};
+    for(var hi=0;hi<headers.length;hi++){
+      obj[headers[hi]]=rows[ri][hi]||'';
+    }
+    result.push(obj);
+  }
+  return result;
+}
+
+// ===== DATA LOADING =====
+function loadCSV(type,month){
+  var url='./expense_data/'+type+'_'+month+'.csv';
+  return fetch(url).then(function(r){
+    if(!r.ok)return[];
+    return r.text();
+  }).then(function(t){
+    if(!t)return[];
+    return parseCSV(t);
+  }).catch(function(){return[];});
+}
+
+function loadAllData(){
+  var types=['taxi','hotel','flight','train','vas','meal','travel','overtime','subsidy','finance'];
+  var months=['1m','2m','3m'];
+  var promises=[];
+  types.forEach(function(type){
+    months.forEach(function(m){
+      promises.push(loadCSV(type,m).then(function(rows){
+        rows.forEach(function(r){r._type=type;r._month=m.replace('m','');});
+        ALL_DATA[type]=ALL_DATA[type].concat(rows);
+      }));
+    });
+  });
+  return Promise.all(promises);
+}
+
+// ===== EMPLOYEE INFO =====
+function buildEmpInfo(){
+  var all=[].concat(ALL_DATA.taxi,ALL_DATA.hotel,ALL_DATA.flight,ALL_DATA.train,ALL_DATA.overtime,ALL_DATA.travel,ALL_DATA.vas,ALL_DATA.subsidy,ALL_DATA.finance,ALL_DATA.meal);
+  all.forEach(function(r){
+    var eid=r['工号']||r['员工编码']||r['员工编号']||r['预订人工号']||'';
+    if(!eid||eid==='0')return;
+    var name=r['姓名']||r['申请人']||'';
+    var d1=(r['一级部门']||'').replace(/^0$/,'');
+    var rawD2=(r['二级部门']||'');
+    var d2=rawD2.replace(/^0$/,'');
+    if(d2==='')d2='';
+    if(!EMP_INFO[eid]||(d2&&!EMP_INFO[eid].d2)||(EMP_INFO[eid].d2==='未分配'&&d2)){
+      EMP_INFO[eid]={name:name||EMP_INFO[eid]?EMP_INFO[eid].name:eid,d1:d1||EMP_INFO[eid]?EMP_INFO[eid].d1:'',d2:d2||EMP_INFO[eid]?EMP_INFO[eid].d2:'未分配'};
+    }
+    if(d2)DEPT2_MAP[d2]=d1;
+  });
+  // Fix special employees
+  EMP_INFO[LIU_CHANGBO]={name:'刘长波',d1:'公司领导',d2:'公司领导'};
+  EMP_INFO[BAI_HUA]={name:'白桦',d1:'市场运营部',d2:'市场运营部虚拟'};
+  DEPT2_MAP['公司领导']='公司领导';
+  // Fix any remaining empty d2
+  Object.keys(EMP_INFO).forEach(function(eid){
+    if(!EMP_INFO[eid].d2||EMP_INFO[eid].d2==='')EMP_INFO[eid].d2='未分配';
+    if(!EMP_INFO[eid].d1||EMP_INFO[eid].d1==='')EMP_INFO[eid].d1='市场运营部';
+  });
+}
+
+function getEmpDept2(eid){return EMP_INFO[eid]?EMP_INFO[eid].d2:'未分配';}
+function getEmpName(eid){return EMP_INFO[eid]?EMP_INFO[eid].name:eid;}
+function parseDate(s){if(!s)return null;var m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;}
+function parseDateTime(s){if(!s)return null;var m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s*(\d{1,2}):(\d{1,2})/);return m?new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]):null;}
+function isWeekend(d){var day=d.getDay();return day===0||day===6;}
+function filterByMonth(arr){if(currentMonth==='all')return arr;return arr.filter(function(r){return r._month===currentMonth;});}
+function filterByDept(arr,eidKey){
+  if(currentDept==='all')return arr;
+  return arr.filter(function(r){
+    var eid=r[eidKey]||'';
+    return getEmpDept2(eid)===currentDept;
+  });
+}
+function fmt(n){return n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtK(n){if(n>=10000)return(n/10000).toFixed(2)+'万';return fmt(n);}
+
+// ===== TAXI CLASSIFICATION =====
+function classifyTaxi(r){
+  var from=r['出发地名称']||'';
+  var to=r['目的地名称']||'';
+  var note=r['用车备注']||'';
+  var eid=r['工号']||'';
+  // 通勤用车: 出发地或目的地包含丽泽
+  for(var i=0;i<LIZE_KEYWORDS.length;i++){
+    if(from.indexOf(LIZE_KEYWORDS[i])>=0||to.indexOf(LIZE_KEYWORDS[i])>=0){
+      return 'commute';
+    }
+  }
+  // 出差用车
+  if(note.indexOf('出差')>=0)return 'business';
+  // 加班用车: 用车备注=加班, 或 工作日20:30后, 或 周末
+  if(note.indexOf('加班')>=0)return 'overtime';
+  var dt=parseDateTime(r['开始计费时间']||r['下单时间']||'');
+  if(dt){
+    if(isWeekend(dt))return 'overtime';
+    var h=dt.getHours(),m=dt.getMinutes();
+    if(h>20||(h===20&&m>=30))return 'overtime';
+  }
+  return 'other';
+}
+
+// ===== ANOMALY DETECTION =====
+function detectAnomalies(){
+  ANOMALIES=[];
+  var overtimeSet={};
+  var travelSet={};
+
+  // Build overtime lookup: eid -> Set of dates with overtime
+  ALL_DATA.overtime.forEach(function(r){
+    var eid=r['工号']||'';
+    var date=r['打卡日期']||'';
+    var ot=parseFloat(r['加班工时']||'0');
+    if(ot>0){
+      if(!overtimeSet[eid])overtimeSet[eid]={};
+      overtimeSet[eid][date.replace(/-/g,'')]=true;
+    }
+  });
+
+  // Build travel approval lookup: eid -> [{start,end}]
+  ALL_DATA.travel.forEach(function(r){
+    var eid=r['员工编码']||'';
+    var start=r['出差开始时间']||r['出差实际开始时间']||'';
+    var end=r['出差结束时间']||r['出差实际结束时间']||'';
+    if(!travelSet[eid])travelSet[eid]=[];
+    travelSet[eid].push({start:parseDateTime(start),end:parseDateTime(end)});
+  });
+
+  // Taxi anomalies
+  filterByMonth(ALL_DATA.taxi).forEach(function(r){
+    var eid=r['工号']||'';
+    var name=r['姓名']||'';
+    if(eid===LIU_CHANGBO)return;
+    var cat=classifyTaxi(r);
+    var amt=parseFloat(r['企业实付金额']||'0');
+    var dt=parseDateTime(r['开始计费时间']||r['下单时间']||'');
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    var d2=rawD2||getEmpDept2(eid);
+    var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
+
+    // 非加班时段用车
+    if(cat==='other'&&dt&&!isWeekend(dt)){
+      var h=dt.getHours(),m=dt.getMinutes();
+      var mins=h*60+m;
+      if(mins>=510&&mins<=1230){
+        ANOMALIES.push({name:name,eid:eid,d2:d2,type:'非加班时段用车',detail:'工作日'+dt.getHours()+':'+String(dt.getMinutes()).padStart(2,'0')+'打车，非出差/通勤',amount:amt,date:dateStr,severity:'high',src:'taxi',raw:r});
+      }
+    }
+
+    // 交叉验证: 加班用车但无加班打卡
+    if(cat==='overtime'&&dt){
+      var key=dateStr.replace(/-/g,'');
+      if(!overtimeSet[eid]||!overtimeSet[eid][key]){
+        ANOMALIES.push({name:name,eid:eid,d2:d2,type:'无加班记录',detail:dateStr+' 加班打车但无对应加班打卡记录',amount:amt,date:dateStr,severity:'mid',src:'taxi',raw:r});
+      }
+    }
+
+    // 交叉验证: 出差用车但无出差审批
+    if(cat==='business'&&dt){
+      var trips=travelSet[eid]||[];
+      var hasApproval=trips.some(function(t){return t.start&&t.end&&dt>=t.start&&dt<=t.end;});
+      if(!hasApproval){
+        ANOMALIES.push({name:name,eid:eid,d2:d2,type:'无出差审批',detail:dateStr+' 出差用车但无对应出差审批单',amount:amt,date:dateStr,severity:'high',src:'taxi',raw:r});
+      }
+    }
+  });
+
+  // Train anomalies
+  filterByMonth(ALL_DATA.train).forEach(function(r){
+    var eid=r['工号']||'';
+    var name=r['姓名']||'';
+    var seat=r['席别']||'';
+    var amt=parseFloat(r['企业实付金额']||'0');
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    var d2=rawD2||getEmpDept2(eid);
+    var dt=parseDate(r['出发时间']||'');
+    var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
+    if(seat!=='二等座'&&r['订单类型']!=='退票'){
+      var isLiu=eid===LIU_CHANGBO;
+      ANOMALIES.push({name:name,eid:eid,d2:d2,type:'舱位超标',detail:'乘坐'+seat+'，标准为二等座'+(isLiu?'（高管）':''),amount:amt,date:dateStr,severity:isLiu?'low':'high',src:'train',raw:r});
+    }
+  });
+
+  // Flight anomalies
+  filterByMonth(ALL_DATA.flight).forEach(function(r){
+    var eid=r['工号']||'';
+    var name=r['姓名']||'';
+    var amt=parseFloat(r['企业实付']||'0');
+    var ticketPrice=parseFloat(r['票面价']||'0');
+    var protocol=r['是否协议价']||'';
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    var d2=rawD2||getEmpDept2(eid);
+    var dt=parseDate(r['起飞日期']||'');
+    var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
+    if(r['订单类型']!=='出票')return;
+    if(r['终票状态']==='已退票')return;
+    if(ticketPrice>2000){
+      ANOMALIES.push({name:name,eid:eid,d2:d2,type:'疑似舱位超标',detail:'票面价'+ticketPrice+'元，需核实是否经济舱',amount:amt,date:dateStr,severity:'mid',src:'flight',raw:r});
+    }
+    if(protocol==='商旅尊享'){
+      ANOMALIES.push({name:name,eid:eid,d2:d2,type:'商旅尊享价',detail:'使用商旅尊享价预订，需核实舱位',amount:amt,date:dateStr,severity:'mid',src:'flight',raw:r});
+    }
+  });
+
+  // Hotel anomalies
+  filterByMonth(ALL_DATA.hotel).forEach(function(r){
+    var eid=r['工号']||'';
+    var name=r['姓名']||'';
+    var amt=parseFloat(r['企业实付金额']||'0');
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    var d2=rawD2||getEmpDept2(eid);
+    var dt=parseDate(r['预订入住日期']||'');
+    var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
+    var isOver=r['是否超标']||'';
+    var nights=parseFloat(r['合计间夜数']||'1')||1;
+    var perNight=amt/nights;
+    var hotelName=r['酒店名称']||'';
+    var isTier1City=['北京','上海','广州','深圳'].some(function(c){return hotelName.indexOf(c)>=0;});
+    var limit=300;
+    // Determine limit based on role
+    if(d2==='公司领导'){limit=isTier1City?600:500;}
+    else if(d2.indexOf('虚拟')>=0||d2==='市场运营部虚拟'){limit=isTier1City?500:400;}
+    else{limit=isTier1City?400:300;}
+    if(isOver==='是'||perNight>limit){
+      ANOMALIES.push({name:name,eid:eid,d2:d2,type:'住宿超标',detail:'每晚'+fmt(perNight)+'元，标准'+limit+'元/晚',amount:amt,date:dateStr,severity:'mid',src:'hotel',raw:r});
+    }
+  });
+
+  // Meal anomalies
+  filterByMonth(ALL_DATA.meal).forEach(function(r){
+    var eid=r['用餐人']||r['预订人工号']||'';
+    var name=r['预订人']||r['用餐人']||'';
+    var amt=parseFloat(r['企业结算金额']||'0');
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    var d2=rawD2||getEmpDept2(eid);
+    var dt=parseDate(r['预订日期']||'');
+    var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
+    var timeStr=r['预订时间']||'';
+    if(amt>30){
+      ANOMALIES.push({name:name,eid:eid,d2:d2,type:'加班餐超标',detail:'金额'+amt+'元，标准30元/人',amount:amt,date:dateStr,severity:'mid',src:'meal',raw:r});
+    }
+    if(timeStr){
+      var hm=timeStr.match(/(\d{1,2}):(\d{2})/);
+      if(hm){
+        var hh=+hm[1],mm=+hm[2];
+        if(hh<20||(hh===20&&mm<30)){
+          ANOMALIES.push({name:name,eid:eid,d2:d2,type:'非加班时段点餐',detail:'点餐时间'+timeStr+'，标准20:30后',amount:amt,date:dateStr,severity:'low',src:'meal',raw:r});
+        }
+      }
+    }
+  });
+
+  // Sort by severity
+  var sevOrder={high:0,mid:1,low:2};
+  ANOMALIES.sort(function(a,b){return sevOrder[a.severity]-sevOrder[b.severity];});
+}
+
+// ===== COMPUTE STATS =====
+function computeStats(){
+  var taxi=filterByDept(filterByMonth(ALL_DATA.taxi),'工号');
+  var hotel=filterByDept(filterByMonth(ALL_DATA.hotel),'工号');
+  var flight=filterByDept(filterByMonth(ALL_DATA.flight),'工号');
+  var train=filterByDept(filterByMonth(ALL_DATA.train),'工号');
+  var vas=filterByDept(filterByMonth(ALL_DATA.vas),'预订人工号');
+  var meal=filterByDept(filterByMonth(ALL_DATA.meal),'用餐人');
+  var subsidy=filterByDept(filterByMonth(ALL_DATA.subsidy),'员工编号');
+  var finance=filterByDept(filterByMonth(ALL_DATA.finance),'二级部门');
+
+  function sum(arr,key){return arr.reduce(function(s,r){return s+parseFloat(r[key]||'0');},0);}
+
+  var taxiTotal=sum(taxi,'企业实付金额');
+  var hotelTotal=sum(hotel,'企业实付金额');
+  var flightTotal=sum(flight,'企业实付');
+  var trainTotal=sum(train,'企业实付金额');
+  var vasTotal=sum(vas,'单价');
+  var mealTotal=sum(meal,'企业结算金额');
+  var subsidyTotal=sum(subsidy,'出差补助');
+  var financeTotal=sum(finance,'核定金额');
+  var travelTotal=hotelTotal+flightTotal+trainTotal;
+  var totalAll=taxiTotal+travelTotal+mealTotal+vasTotal+subsidyTotal+financeTotal;
+
+  var filteredAnomalies=ANOMALIES.filter(function(a){
+    if(currentMonth!=='all'&&a.date){var m=parseInt(a.date.split('-')[1]);if(m!==parseInt(currentMonth))return false;}
+    if(currentDept!=='all'&&a.d2!==currentDept)return false;
+    return true;
+  });
+
+  return{taxiTotal:taxiTotal,hotelTotal:hotelTotal,flightTotal:flightTotal,trainTotal:trainTotal,vasTotal:vasTotal,mealTotal:mealTotal,subsidyTotal:subsidyTotal,financeTotal:financeTotal,travelTotal:travelTotal,totalAll:totalAll,filteredAnomalies:filteredAnomalies,taxi:taxi,hotel:hotel,flight:flight,train:train,vas:vas,meal:meal,subsidy:subsidy,finance:finance};
+}
+
+// ===== DEPT AGGREGATION =====
+function aggregateByDept2(data,eidKey,amtKey){
+  var map={};
+  data.forEach(function(r){
+    var eid=r[eidKey]||'';
+    var d2=getEmpDept2(eid);
+    var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    if(rawD2)d2=rawD2;
+    if(!d2||d2==='0')d2='未分配';
+    var amt=parseFloat(r[amtKey]||'0');
+    if(!map[d2])map[d2]={total:0,count:0,emps:{}};
+    map[d2].total+=amt;
+    map[d2].count++;
+    map[d2].emps[eid]=true;
+  });
+  Object.keys(map).forEach(function(k){
+    var empCount=Object.keys(map[k].emps).length;
+    map[k].avg=empCount>0?map[k].total/empCount:0;
+  });
+  return map;
+}
+
+// ===== RENDER =====
+var chartDept,chartPie,chartTrend;
+
+function initCharts(){
+  chartDept=echarts.init(document.getElementById('chart-dept'),'dark');
+  chartPie=echarts.init(document.getElementById('chart-taxi-pie'),'dark');
+  chartTrend=echarts.init(document.getElementById('chart-trend'),'dark');
+  window.addEventListener('resize',function(){chartDept.resize();chartPie.resize();chartTrend.resize();});
+}
+
+function render(){
+  var stats=computeStats();
+  document.getElementById('v-total').textContent=fmtK(stats.totalAll);
+  document.getElementById('v-taxi').textContent=fmtK(stats.taxiTotal);
+  document.getElementById('v-travel').textContent=fmtK(stats.travelTotal);
+  document.getElementById('v-meal').textContent=fmtK(stats.mealTotal);
+  document.getElementById('v-anomaly').textContent=stats.filteredAnomalies.length;
+  document.getElementById('v-total-sub').textContent='差旅'+fmtK(stats.travelTotal)+' | 补贴'+fmtK(stats.subsidyTotal);
+  document.getElementById('v-taxi-sub').textContent=stats.taxi.length+'笔';
+  document.getElementById('v-travel-sub').textContent='机票+火车+酒店';
+  document.getElementById('v-meal-sub').textContent=stats.meal.length+'笔';
+  renderDeptChart(stats);
+  renderTaxiPie(stats);
+  renderTrendChart(stats);
+  renderAnomalyTable(stats);
+  renderEmpTable(stats);
+}
+
+function renderDeptChart(stats){
+  var cats=[];
+  if(currentDeptChartType==='all')cats=['打车','酒店','机票','火车','增值服务'];
+  else if(currentDeptChartType==='taxi')cats=['打车'];
+  else if(currentDeptChartType==='travel')cats=['酒店','机票','火车'];
+  else if(currentDeptChartType==='meal')cats=['加班餐'];
+  else if(currentDeptChartType==='vas')cats=['增值服务'];
+
+  var depts={};
+  Object.values(EMP_INFO).forEach(function(e){if(e.d2&&e.d2!=='未分配')depts[e.d2]=true;});
+  depts['公司领导']=true;
+  var deptArr=Object.keys(depts).filter(function(d){return d!=='未分配';}).sort();
+
+  var taxiMap=aggregateByDept2(stats.taxi,'工号','企业实付金额');
+  var hotelMap=aggregateByDept2(stats.hotel,'工号','企业实付金额');
+  var flightMap=aggregateByDept2(stats.flight,'工号','企业实付');
+  var trainMap=aggregateByDept2(stats.train,'工号','企业实付金额');
+  var vasMap=aggregateByDept2(stats.vas,'预订人工号','单价');
+  var mealMap=aggregateByDept2(stats.meal,'用餐人','企业结算金额');
+
+  var maps={'打车':taxiMap,'酒店':hotelMap,'机票':flightMap,'火车':trainMap,'增值服务':vasMap,'加班餐':mealMap};
+  var colors={'打车':'#00f0a0','酒店':'#ff9f43','机票':'#a55eea','火车':'#00d4ff','增值服务':'#ffd93d','加班餐':'#ff6b6b'};
+
+  var series=cats.map(function(cat,idx){
+    return {
+      name:cat,type:'bar',stack:'total',
+      emphasis:{focus:'series'},
+      itemStyle:{color:colors[cat],borderRadius:idx===cats.length-1?[4,4,0,0]:[0,0,0,0]},
+      data:deptArr.map(function(d){return parseFloat(((maps[cat]||{})[d]||{total:0}).total.toFixed(2));})
+    };
+  });
+
+  chartDept.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:function(params){
+      var s=params[0].axisValue+'<br/>';
+      params.forEach(function(p){s+=p.marker+p.seriesName+': ¥'+fmt(p.value)+'<br/>';});
+      return s;
+    }},
+    legend:{data:cats,textStyle:{color:'#8892b0',fontSize:11},top:0},
+    grid:{left:80,right:20,top:36,bottom:30},
+    xAxis:{type:'category',data:deptArr,axisLabel:{color:'#8892b0',fontSize:11,rotate:15},axisLine:{lineStyle:{color:'#1e2a5a'}},axisTick:{show:false}},
+    yAxis:{type:'value',axisLabel:{color:'#8892b0',fontSize:11,formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v;}},splitLine:{lineStyle:{color:'#1e2a5a',type:'dashed'}},axisLine:{show:false}},
+    series:series
+  },true);
+}
+
+function renderTaxiPie(stats){
+  var taxiData=filterByDept(filterByMonth(ALL_DATA.taxi),'工号');
+  var counts={commute:0,business:0,overtime:0,other:0};
+  var amounts={commute:0,business:0,overtime:0,other:0};
+  taxiData.forEach(function(r){
+    var cat=classifyTaxi(r);
+    counts[cat]++;
+    amounts[cat]+=parseFloat(r['企业实付金额']||'0');
+  });
+
+  var labels={commute:'通勤用车',business:'出差用车',overtime:'加班用车',other:'其他用车'};
+  var pieColors=['#00d4ff','#00f0a0','#ff9f43','#ff6b6b'];
+
+  chartPie.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'item',formatter:function(p){return p.name+'<br/>笔数: '+counts[p.data.key]+'<br/>金额: ¥'+fmt(amounts[p.data.key])+'<br/>占比: '+p.percent+'%';}},
+    legend:{orient:'vertical',right:10,top:'center',textStyle:{color:'#8892b0',fontSize:12}},
+    series:[{
+      type:'pie',radius:['40%','70%'],center:['40%','50%'],
+      avoidLabelOverlap:true,
+      itemStyle:{borderRadius:6,borderColor:'#0a0e27',borderWidth:2},
+      label:{show:true,color:'#e0e6f0',formatter:'{b}\n{d}%'},
+      emphasis:{label:{show:true,fontSize:14,fontWeight:'bold'}},
+      data:Object.keys(labels).map(function(k,i){return{name:labels[k],value:counts[k],key:k,itemStyle:{color:pieColors[i]}};})
+    }]
+  },true);
+}
+
+function renderTrendChart(stats){
+  var months=['1','2','3'];
+  var taxiByM={},hotelByM={},flightByM={},trainByM={},vasByM={},mealByM={};
+  months.forEach(function(m){
+    var tx=ALL_DATA.taxi.filter(function(r){return r._month===m;});
+    var ht=ALL_DATA.hotel.filter(function(r){return r._month===m;});
+    var fl=ALL_DATA.flight.filter(function(r){return r._month===m;});
+    var tr=ALL_DATA.train.filter(function(r){return r._month===m;});
+    var vs=ALL_DATA.vas.filter(function(r){return r._month===m;});
+    var ml=ALL_DATA.meal.filter(function(r){return r._month===m;});
+    taxiByM[m]=tx.reduce(function(s,r){return s+parseFloat(r['企业实付金额']||0);},0);
+    hotelByM[m]=ht.reduce(function(s,r){return s+parseFloat(r['企业实付金额']||0);},0);
+    flightByM[m]=fl.reduce(function(s,r){return s+parseFloat(r['企业实付']||0);},0);
+    trainByM[m]=tr.reduce(function(s,r){return s+parseFloat(r['企业实付金额']||0);},0);
+    vasByM[m]=vs.reduce(function(s,r){return s+parseFloat(r['单价']||0);},0);
+    mealByM[m]=ml.reduce(function(s,r){return s+parseFloat(r['企业结算金额']||0);},0);
+  });
+
+  chartTrend.setOption({
+    backgroundColor:'transparent',
+    tooltip:{trigger:'axis',formatter:function(params){
+      var s=params[0].axisValue+'<br/>';
+      params.forEach(function(p){s+=p.marker+p.seriesName+': ¥'+fmt(p.value)+'<br/>';});
+      return s;
+    }},
+    legend:{data:['打车','酒店','机票','火车','增值服务'],textStyle:{color:'#8892b0',fontSize:11},top:0},
+    grid:{left:70,right:20,top:36,bottom:30},
+    xAxis:{type:'category',data:months.map(function(m){return m+'月';}),axisLabel:{color:'#8892b0'},axisLine:{lineStyle:{color:'#1e2a5a'}},axisTick:{show:false}},
+    yAxis:{type:'value',axisLabel:{color:'#8892b0',fontSize:11,formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v;}},splitLine:{lineStyle:{color:'#1e2a5a',type:'dashed'}},axisLine:{show:false}},
+    series:[
+      {name:'打车',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(taxiByM[m].toFixed(2));}),lineStyle:{color:'#00f0a0'},itemStyle:{color:'#00f0a0'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(0,240,160,0.2)'},{offset:1,color:'rgba(0,240,160,0)'}]}}},
+      {name:'酒店',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(hotelByM[m].toFixed(2));}),lineStyle:{color:'#ff9f43'},itemStyle:{color:'#ff9f43'}},
+      {name:'机票',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(flightByM[m].toFixed(2));}),lineStyle:{color:'#a55eea'},itemStyle:{color:'#a55eea'}},
+      {name:'火车',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(trainByM[m].toFixed(2));}),lineStyle:{color:'#00d4ff'},itemStyle:{color:'#00d4ff'}},
+      {name:'增值服务',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(vasByM[m].toFixed(2));}),lineStyle:{color:'#ffd93d'},itemStyle:{color:'#ffd93d'}}
+    ]
+  },true);
+}
+
+function renderAnomalyTable(stats){
+  var tbody=document.getElementById('anomaly-tbody');
+  tbody.innerHTML='';
+  var list=stats.filteredAnomalies.slice(0,100);
+  list.forEach(function(a){
+    var sevClass=a.severity==='high'?'badge-high':a.severity==='mid'?'badge-mid':'badge-low';
+    var tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.innerHTML='<td class="'+(a.severity==='high'?'severity-high':a.severity==='mid'?'severity-mid':'severity-low')+'">'+a.name+'</td>'+
+      '<td>'+a.d2+'</td>'+
+      '<td><span class="badge '+sevClass+'">'+a.type+'</span></td>'+
+      '<td title="'+a.detail+'">'+(a.detail.length>20?a.detail.slice(0,20)+'...':a.detail)+'</td>'+
+      '<td>¥'+fmt(a.amount)+'</td>'+
+      '<td>'+a.date+'</td>';
+    tr.onclick=function(){showDetail(a);};
+    tbody.appendChild(tr);
+  });
+  if(list.length===0){
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--accent2);padding:20px">✅ 暂无异常记录</td></tr>';
+  }
+}
+
+function renderEmpTable(stats){
+  var tbody=document.getElementById('emp-tbody');
+  tbody.innerHTML='';
+  var empMap={};
+  var taxiData=filterByMonth(ALL_DATA.taxi);
+  var hotelData=filterByMonth(ALL_DATA.hotel);
+  var flightData=filterByMonth(ALL_DATA.flight);
+  var trainData=filterByMonth(ALL_DATA.train);
+  var vasData=filterByMonth(ALL_DATA.vas);
+  var mealData=filterByMonth(ALL_DATA.meal);
+  var subsidyData=filterByMonth(ALL_DATA.subsidy);
+
+  function addEmp(eid){
+    if(!eid||eid==='0')return;
+    if(!empMap[eid])empMap[eid]={taxi:0,hotel:0,flight:0,train:0,vas:0,meal:0,subsidy:0,anomalies:0};
+  }
+  taxiData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].taxi+=parseFloat(r['企业实付金额']||0);});
+  hotelData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].hotel+=parseFloat(r['企业实付金额']||0);});
+  flightData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].flight+=parseFloat(r['企业实付']||0);});
+  trainData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].train+=parseFloat(r['企业实付金额']||0);});
+  vasData.forEach(function(r){var eid=r['预订人工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].vas+=parseFloat(r['单价']||0);});
+  mealData.forEach(function(r){var eid=r['用餐人']||'';addEmp(eid);if(empMap[eid])empMap[eid].meal+=parseFloat(r['企业结算金额']||0);});
+  subsidyData.forEach(function(r){var eid=r['员工编号']||'';addEmp(eid);if(empMap[eid])empMap[eid].subsidy+=parseFloat(r['出差补助']||0);});
+
+  ANOMALIES.forEach(function(a){
+    if(currentMonth!=='all'&&a.date){var m=parseInt(a.date.split('-')[1]);if(m!==parseInt(currentMonth))return;}
+    if(empMap[a.eid])empMap[a.eid].anomalies++;
+    else if(a.eid){empMap[a.eid]={taxi:0,hotel:0,flight:0,train:0,vas:0,meal:0,subsidy:0,anomalies:1};}
+  });
+
+  var depts={};
+  Object.keys(empMap).forEach(function(eid){
+    var d2=getEmpDept2(eid);
+    if(currentDept!=='all'&&d2!==currentDept)return;
+    if(!depts[d2])depts[d2]=[];
+    depts[d2].push(Object.assign({eid:eid},empMap[eid]));
+  });
+
+  var deptOrder=['运营管理部','市场运营部虚拟','品牌发展部','公司领导','未分配'];
+  var sortedDepts=Object.keys(depts).sort(function(a,b){return deptOrder.indexOf(a)-deptOrder.indexOf(b);});
+
+  sortedDepts.forEach(function(d2){
+    var tr=document.createElement('tr');
+    tr.className='dept-group';
+    var deptTotal=depts[d2].reduce(function(s,e){return s+e.taxi+e.hotel+e.flight+e.train+e.vas+e.meal+e.subsidy;},0);
+    tr.innerHTML='<td colspan="8">'+d2+'（'+depts[d2].length+'人）| 合计 ¥'+fmtK(deptTotal)+'</td>';
+    tbody.appendChild(tr);
+
+    depts[d2].sort(function(a,b){
+      if(a.eid===LIU_CHANGBO)return 1;
+      if(b.eid===LIU_CHANGBO)return -1;
+      var ta=a.taxi+a.hotel+a.flight+a.train+a.vas+a.meal+a.subsidy;
+      var tb=b.taxi+b.hotel+b.flight+b.train+b.vas+b.meal+b.subsidy;
+      return tb-ta;
+    });
+
+    depts[d2].forEach(function(e){
+      var travel=e.hotel+e.flight+e.train;
+      var isLiu=e.eid===LIU_CHANGBO;
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+d2+'</td>'+
+        '<td>'+getEmpName(e.eid)+(isLiu?' (高管)':'')+'</td>'+
+        '<td>¥'+fmt(e.taxi)+'</td>'+
+        '<td>¥'+fmt(travel)+'</td>'+
+        '<td>¥'+fmt(e.meal)+'</td>'+
+        '<td>¥'+fmt(e.vas)+'</td>'+
+        '<td>¥'+fmt(e.subsidy)+'</td>'+
+        '<td class="'+(e.anomalies>0?'anomaly-count':'anomaly-zero')+'">'+(e.anomalies>0?e.anomalies+'条':'0')+'</td>';
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// ===== INTERACTIONS =====
+function showDetail(a){
+  var modal=document.getElementById('detail-modal');
+  document.getElementById('modal-title').textContent='异常详情 - '+a.name;
+  var html='<div class="detail-item"><span class="dl">异常类型：</span><span class="badge badge-'+(a.severity==='high'?'high':a.severity==='mid'?'mid':'low')+'">'+a.type+'</span></div>';
+  html+='<div class="detail-item"><span class="dl">员工：</span>'+a.name+'（'+a.eid+'）</div>';
+  html+='<div class="detail-item"><span class="dl">部门：</span>'+a.d2+'</div>';
+  html+='<div class="detail-item"><span class="dl">金额：</span>¥'+fmt(a.amount)+'</div>';
+  html+='<div class="detail-item"><span class="dl">日期：</span>'+a.date+'</div>';
+  html+='<div class="detail-item"><span class="dl">详情：</span>'+a.detail+'</div>';
+  if(a.raw){
+    html+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)"><span class="dl" style="color:var(--accent)">原始记录：</span></div>';
+    var skip=['_type','_month'];
+    Object.keys(a.raw).filter(function(k){return skip.indexOf(k)<0&&a.raw[k];}).forEach(function(k){
+      html+='<div class="detail-item" style="font-size:12px"><span class="dl">'+k+'：</span>'+a.raw[k]+'</div>';
+    });
+  }
+  document.getElementById('modal-content').innerHTML=html;
+  modal.classList.add('show');
+}
+function closeModal(){document.getElementById('detail-modal').classList.remove('show');}
+document.getElementById('detail-modal').addEventListener('click',function(e){if(e.target===e.currentTarget)closeModal();});
+
+function toggleEmpTable(){
+  var wrap=document.getElementById('emp-wrap');
+  var arrow=document.getElementById('emp-arrow');
+  wrap.classList.toggle('collapsed');
+  arrow.classList.toggle('collapsed');
+}
+
+document.getElementById('month-filter').addEventListener('click',function(e){
+  if(!e.target.classList.contains('filter-btn'))return;
+  document.querySelectorAll('#month-filter .filter-btn').forEach(function(b){b.classList.remove('active');});
+  e.target.classList.add('active');
+  currentMonth=e.target.dataset.month;
+  render();
+});
+
+document.getElementById('dept-select').addEventListener('change',function(e){
+  currentDept=e.target.value;
+  render();
+});
+
+document.getElementById('dept-chart-tabs').addEventListener('click',function(e){
+  if(!e.target.classList.contains('chart-tab'))return;
+  document.querySelectorAll('#dept-chart-tabs .chart-tab').forEach(function(b){b.classList.remove('active');});
+  e.target.classList.add('active');
+  currentDeptChartType=e.target.dataset.type;
+  var stats=computeStats();
+  renderDeptChart(stats);
+});
+
+// ===== INIT =====
+function initDashboard(){
+  document.getElementById('loading').style.display='block';
+  loadAllData().then(function(){
+    buildEmpInfo();
+    detectAnomalies();
+    var depts={};
+    Object.values(EMP_INFO).forEach(function(e){if(e.d2&&e.d2!=='未分配')depts[e.d2]=true;});
+    depts['公司领导']=true;
+    var sel=document.getElementById('dept-select');
+    Object.keys(depts).sort().forEach(function(d){
+      var opt=document.createElement('option');opt.value=d;opt.textContent=d;sel.appendChild(opt);
+    });
+    initCharts();
+    render();
+    document.getElementById('loading').style.display='none';
+  }).catch(function(e){
+    console.error(e);
+    alert('数据加载失败: '+e.message);
+    document.getElementById('loading').style.display='none';
+  });
+}
+</script>
+</body>
+</html>
