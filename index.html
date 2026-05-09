@@ -8847,10 +8847,10 @@ function renderExpense(){
     document.getElementById('exp-v-taxi').textContent=expFmtK(stats.taxiTotal);
     document.getElementById('exp-v-travel').textContent=expFmtK(stats.travelTotal);
     document.getElementById('exp-v-meal').textContent=expFmtK(stats.mealTotal);
-    var anomHigh=stats.filteredAnomalies.filter(function(a){return a.severity==='high';}).length;
-  var anomMid=stats.filteredAnomalies.filter(function(a){return a.severity==='mid';}).length;
-  document.getElementById('exp-v-anomaly').textContent=stats.filteredAnomalies.length;
-  document.getElementById('exp-v-anomaly-sub').textContent='高危'+anomHigh+' | 中危'+anomMid;
+      var anomHigh=stats.filteredAnomalies.filter(function(a){return a.severity==='high';}).length;
+    var anomMid=stats.filteredAnomalies.filter(function(a){return a.severity==='mid';}).length;
+    document.getElementById('exp-v-anomaly').textContent=stats.filteredAnomalies.length;
+    document.getElementById('exp-v-anomaly-sub').textContent='高危'+anomHigh+' | 中危'+anomMid;
     document.getElementById('exp-v-total-sub').textContent='差旅'+expFmtK(stats.travelTotal)+' | 补贴'+expFmtK(stats.subsidyTotal);
     document.getElementById('exp-v-taxi-sub').textContent=stats.taxi.length+'笔';
     document.getElementById('exp-v-travel-sub').textContent='机票+火车+酒店';
