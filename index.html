@@ -3687,7 +3687,7 @@
 .exp-filter-btn.exp-active{border-color:var(--exp-accent);color:var(--exp-accent);background:rgba(0,212,255,0.1);box-shadow:0 0 10px rgba(0,212,255,0.15)}
 .exp-filter-btn:hover{border-color:var(--exp-accent);color:var(--exp-accent)}
 #dept-select{padding:6px 12px;border:1px solid var(--exp-border);border-radius:6px;background:var(--exp-bg2);color:var(--exp-text);font-size:13px;outline:none}
-.exp-cards-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+.exp-cards-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}.exp-compare-item{background:var(--exp-card);border:1px solid var(--exp-border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--exp-text2);display:flex;align-items:center;gap:8px}.exp-compare-item .exp-compare-val{font-weight:700;font-size:14px;font-family:'DIN','Roboto Mono',monospace}.exp-compare-up{color:#ff6b6b}.exp-compare-down{color:#00f0a0}.exp-compare-neutral{color:#8892b0}
 .exp-stat-card{background:var(--exp-card);border:1px solid var(--exp-border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:transform 0.3s}
 .exp-stat-card:hover{transform:translateY(-2px)}.exp-stat-card.exp-c5 .exp-value{animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
 .exp-stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px}
@@ -3697,7 +3697,7 @@
 .exp-stat-card .exp-sub{font-size:12px;color:var(--exp-text2);margin-top:4px}
 .exp-stat-card.exp-c1 .exp-value{color:var(--exp-accent)}.exp-stat-card.exp-c2 .exp-value{color:var(--exp-accent2)}.exp-stat-card.exp-c3 .exp-value{color:var(--exp-orange)}.exp-stat-card.exp-c4 .exp-value{color:var(--exp-purple)}.exp-stat-card.exp-c5 .exp-value{color:var(--exp-warn)}
 .exp-stat-card .exp-icon-bg{position:absolute;right:10px;bottom:5px;font-size:50px;opacity:0.06}
-.exp-row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:16px}
+.exp-row2{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:16px}.exp-chart-tab[data-type=percapita]{font-size:11px;border-color:var(--exp-purple);color:var(--exp-purple)}
 .exp-chart-box{background:var(--exp-card);border:1px solid var(--exp-border);border-radius:10px;padding:14px;position:relative}
 .exp-chart-box h3{font-size:14px;color:var(--exp-text2);margin-bottom:10px;padding-left:10px;border-left:3px solid var(--exp-accent)}
 .exp-chart-tabs{display:flex;gap:4px;margin-bottom:8px}
@@ -4169,6 +4169,7 @@
     <div class="exp-stat-card exp-c4"><div class="exp-label">加班餐费用</div><div class="exp-value" id="exp-v-meal">--</div><div class="exp-sub" id="exp-v-meal-sub"></div><div class="exp-icon-bg">&#x1F371;</div></div>
     <div class="exp-stat-card exp-c5"><div class="exp-label">异常条数</div><div class="exp-value" id="exp-v-anomaly">--</div><div class="exp-sub" id="exp-v-anomaly-sub"></div><div class="exp-icon-bg">&#x26A0;</div></div>
   </div>
+  <div class="exp-compare-bar" id="exp-compare-bar" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
   <div class="exp-row2">
     <div class="exp-chart-box">
       <h3>二级部门费用对比</h3>
@@ -4178,6 +4179,7 @@
         <button class="exp-chart-tab" data-type="travel">差旅</button>
         <button class="exp-chart-tab" data-type="meal">加班餐</button>
         <button class="exp-chart-tab" data-type="vas">增值服务</button>
+        <button class="exp-chart-tab" data-type="percapita">人均对比</button>
       </div>
       <div id="exp-chart-dept" style="width:100%;height:280px"></div>
     </div>
@@ -6971,10 +6973,17 @@ function switchPage(page) {
                 Object.keys(depts).sort().forEach(function(d){
                     var opt = document.createElement('option');opt.value=d;opt.textContent=d;sel.appendChild(opt);
                 });
-                initExpCharts();
-                renderExpense();
-                document.getElementById('expLoading').style.display = 'none';
-                window.addEventListener('resize', EXP_resizeHandler);
+                // Delay chart init to ensure DOM has reflowed after display change
+                setTimeout(function() {
+                    try {
+                        initExpCharts();
+                        renderExpense();
+                    } catch(err) {
+                        console.error('图表初始化失败:', err);
+                    }
+                    document.getElementById('expLoading').style.display = 'none';
+                    window.addEventListener('resize', EXP_resizeHandler);
+                }, 200);
             }).catch(function(e){
                 console.error('费用数据加载失败:', e);
                 document.getElementById('expLoading').style.display = 'none';
@@ -8537,7 +8546,7 @@ function buildExpEmpInfo(){
     var d2=rawD2.replace(/^0$/,'');
     if(d2==='')d2='';
     if(!EXP_EMP_INFO[eid]||(d2&&!EXP_EMP_INFO[eid].d2)||(EXP_EMP_INFO[eid].d2==='未分配'&&d2)){
-      EXP_EMP_INFO[eid]={name:name||EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].name:eid,d1:d1||EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].d1:'',d2:d2||EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].d2:'未分配'};
+      EXP_EMP_INFO[eid]={name:name||(EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].name:eid),d1:d1||(EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].d1:''),d2:d2||(EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].d2:'未分配')};
     }
     if(d2)EXP_DEPT2_MAP[d2]=d1;
   });
@@ -8722,17 +8731,20 @@ function detectExpAnomalies(){
   // Meal anomalies
   expFilterByMonth(EXP_ALL_DATA.meal).forEach(function(r){
     var eid=r['预订人工号']||r['用餐人']||'';
-    var name=r['预订人']||EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].name:(r['用餐人']||'');
+    var name=r['预订人']||(EXP_EMP_INFO[eid]?EXP_EMP_INFO[eid].name:(r['用餐人']||''));
     var amt=parseFloat(r['企业结算金额']||'0');
     var rawD2=(r['二级部门']||'').replace(/^0$/,'');
     var d2=rawD2||getExpEmpDept2(eid);
     var dt=expParseDate(r['预订日期']||'');
     var dateStr=dt?dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'):'';
     var timeStr=r['预订时间']||'';
-    if(amt>30){
-      EXP_ANOMALIES.push({name:name,eid:eid,d2:d2,type:'加班餐超标',detail:'金额'+amt+'元，标准30元/人',amount:amt,date:dateStr,severity:'mid',src:'meal',raw:r});
+    var scene=r['合作场景']||'';
+    // Only check overtime meal anomalies for 加班用餐 scenes
+    var isOvertimeMeal=(scene.indexOf('加班')>=0||scene.indexOf('夜宵')>=0||amt<=50);
+    if(isOvertimeMeal&&amt>30){
+      EXP_ANOMALIES.push({name:name,eid:eid,d2:d2,type:'加班餐超标',detail:'金额'+amt.toFixed(2)+'元，标准30元/人',amount:amt,date:dateStr,severity:'mid',src:'meal',raw:r});
     }
-    if(timeStr){
+    if(isOvertimeMeal&&timeStr){
       var hm=timeStr.match(/(\d{1,2}):(\d{2})/);
       if(hm){
         var hh=+hm[1],mm=+hm[2];
@@ -8812,39 +8824,58 @@ function expAggregateByDept2(data,eidKey,amtKey){
 var EXP_chartDept,EXP_chartPie,EXP_chartTrend;
 
 function initExpCharts(){
-  EXP_chartDept=echarts.init(document.getElementById('exp-chart-dept'),'dark');
-  EXP_chartPie=echarts.init(document.getElementById('exp-chart-taxi-pie'),'dark');
-  EXP_chartTrend=echarts.init(document.getElementById('exp-chart-trend'),'dark');
-  // resize handled by EXP_resizeHandler
+  if(typeof echarts==='undefined'){
+    console.error('ECharts库未加载，图表无法初始化');
+    return;
+  }
+  try{
+    var el1=document.getElementById('exp-chart-dept');
+    var el2=document.getElementById('exp-chart-taxi-pie');
+    var el3=document.getElementById('exp-chart-trend');
+    if(el1)EXP_chartDept=echarts.init(el1,'dark'); else console.warn('exp-chart-dept元素不存在');
+    if(el2)EXP_chartPie=echarts.init(el2,'dark'); else console.warn('exp-chart-taxi-pie元素不存在');
+    if(el3)EXP_chartTrend=echarts.init(el3,'dark'); else console.warn('exp-chart-trend元素不存在');
+  }catch(err){
+    console.error('ECharts初始化异常:',err);
+  }
 }
 
 function renderExpense(){
   var stats=expComputeStats();
-  document.getElementById('exp-v-total').textContent=expFmtK(stats.totalAll);
-  document.getElementById('exp-v-taxi').textContent=expFmtK(stats.taxiTotal);
-  document.getElementById('exp-v-travel').textContent=expFmtK(stats.travelTotal);
-  document.getElementById('exp-v-meal').textContent=expFmtK(stats.mealTotal);
+  try{
+    document.getElementById('exp-v-total').textContent=expFmtK(stats.totalAll);
+    document.getElementById('exp-v-taxi').textContent=expFmtK(stats.taxiTotal);
+    document.getElementById('exp-v-travel').textContent=expFmtK(stats.travelTotal);
+    document.getElementById('exp-v-meal').textContent=expFmtK(stats.mealTotal);
+    var anomHigh=stats.filteredAnomalies.filter(function(a){return a.severity==='high';}).length;
+  var anomMid=stats.filteredAnomalies.filter(function(a){return a.severity==='mid';}).length;
   document.getElementById('exp-v-anomaly').textContent=stats.filteredAnomalies.length;
-  document.getElementById('exp-v-total-sub').textContent='差旅'+expFmtK(stats.travelTotal)+' | 补贴'+expFmtK(stats.subsidyTotal);
-  document.getElementById('exp-v-taxi-sub').textContent=stats.taxi.length+'笔';
-  document.getElementById('exp-v-travel-sub').textContent='机票+火车+酒店';
-  var overtimeData4Card=expFilterByDept(expFilterByMonth(EXP_ALL_DATA.overtime),'工号');
-  var overtimeMealCost4Card=overtimeData4Card.reduce(function(s,r){return s+parseFloat(r['餐次测算']||0)*30;},0);
-  document.getElementById('exp-v-meal-sub').textContent='含加班餐补'+expFmtK(overtimeMealCost4Card);
-  renderExpDeptChart(stats);
-  renderExpTaxiPie(stats);
-  renderExpTrendChart(stats);
-  renderExpAnomalyTable(stats);
-  renderExpEmpTable(stats);
+  document.getElementById('exp-v-anomaly-sub').textContent='高危'+anomHigh+' | 中危'+anomMid;
+    document.getElementById('exp-v-total-sub').textContent='差旅'+expFmtK(stats.travelTotal)+' | 补贴'+expFmtK(stats.subsidyTotal);
+    document.getElementById('exp-v-taxi-sub').textContent=stats.taxi.length+'笔';
+    document.getElementById('exp-v-travel-sub').textContent='机票+火车+酒店';
+    var overtimeData4Card=expFilterByDept(expFilterByMonth(EXP_ALL_DATA.overtime),'工号');
+    var overtimeMealCost4Card=overtimeData4Card.reduce(function(s,r){return s+parseFloat(r['餐次测算']||0)*30;},0);
+    document.getElementById('exp-v-meal-sub').textContent='含加班餐补'+expFmtK(overtimeMealCost4Card);
+  }catch(err){console.error('更新数据卡片失败:',err);}
+
+  try{renderExpDeptChart(stats);}catch(err){console.error('部门费用对比图渲染失败:',err);}
+  try{renderExpTaxiPie(stats);}catch(err){console.error('打车分类饼图渲染失败:',err);}
+  try{renderExpTrendChart(stats);}catch(err){console.error('月度趋势图渲染失败:',err);}
+  try{renderExpAnomalyTable(stats);}catch(err){console.error('异常清单渲染失败:',err);}
+  try{renderExpEmpTable(stats);}catch(err){console.error('员工明细表渲染失败:',err);}
+  try{renderExpCompareBar(stats);}catch(err){console.error('对比分析条渲染失败:',err);}
 }
 
 function renderExpDeptChart(stats){
   var cats=[];
+  var isPerCapita=EXP_currentDeptChartType==='percapita';
   if(EXP_currentDeptChartType==='all')cats=['打车','酒店','机票','火车','增值服务'];
   else if(EXP_currentDeptChartType==='taxi')cats=['打车'];
   else if(EXP_currentDeptChartType==='travel')cats=['酒店','机票','火车'];
   else if(EXP_currentDeptChartType==='meal')cats=['加班餐'];
   else if(EXP_currentDeptChartType==='vas')cats=['增值服务'];
+  else if(isPerCapita)cats=['打车','差旅','加班餐','增值服务'];
 
   var depts={};
   Object.values(EXP_EMP_INFO).forEach(function(e){if(e.d2&&e.d2!=='未分配')depts[e.d2]=true;});
@@ -8858,8 +8889,19 @@ function renderExpDeptChart(stats){
   var vasMap=expAggregateByDept2(stats.vas,'预订人工号','单价');
   var mealMap=expAggregateByDept2(stats.meal,'预订人工号','企业结算金额');
 
-  var maps={'打车':taxiMap,'酒店':hotelMap,'机票':flightMap,'火车':trainMap,'增值服务':vasMap,'加班餐':mealMap};
-  var colors={'打车':'#00f0a0','酒店':'#ff9f43','机票':'#a55eea','火车':'#00d4ff','增值服务':'#ffd93d','加班餐':'#ff6b6b'};
+  var maps={'打车':taxiMap,'酒店':hotelMap,'机票':flightMap,'火车':trainMap,'增值服务':vasMap,'加班餐':mealMap,'差旅':null};
+  // Build travel map by merging hotel+flight+train
+  var travelMap={};
+  deptArr.forEach(function(d){
+    var h=(hotelMap[d]||{total:0,count:0,emps:{}});var f=(flightMap[d]||{total:0,count:0,emps:{}});var t=(trainMap[d]||{total:0,count:0,emps:{}});
+    var total=h.total+f.total+t.total;
+    var emps={};Object.keys(h.emps).concat(Object.keys(f.emps),Object.keys(t.emps)).forEach(function(e){emps[e]=true;});
+    var empCount=Object.keys(emps).length;
+    travelMap[d]={total:total,count:h.count+f.count+t.count,emps:emps,avg:empCount>0?total/empCount:0};
+  });
+  maps['差旅']=travelMap;
+
+  var colors={'打车':'#00f0a0','酒店':'#ff9f43','机票':'#a55eea','火车':'#00d4ff','增值服务':'#ffd93d','加班餐':'#ff6b6b','差旅':'#ff9f43'};
 
   var series=cats.map(function(cat,idx){
     return {
@@ -8870,6 +8912,7 @@ function renderExpDeptChart(stats){
     };
   });
 
+  if(!EXP_chartDept){console.warn('部门费用图表未初始化');return;}
   EXP_chartDept.setOption({
     backgroundColor:'transparent',
     tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:function(params){
@@ -8883,6 +8926,7 @@ function renderExpDeptChart(stats){
     yAxis:{type:'value',axisLabel:{color:'#8892b0',fontSize:11,formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v;}},splitLine:{lineStyle:{color:'#1e2a5a',type:'dashed'}},axisLine:{show:false}},
     series:series
   },true);
+  setTimeout(function(){if(EXP_chartDept)EXP_chartDept.resize();},50);
 }
 
 function renderExpTaxiPie(stats){
@@ -8898,6 +8942,7 @@ function renderExpTaxiPie(stats){
   var labels={commute:'通勤用车',business:'出差用车',overtime:'加班用车',other:'其他用车'};
   var pieColors=['#00d4ff','#00f0a0','#ff9f43','#ff6b6b'];
 
+  if(!EXP_chartPie){console.warn('打车分类饼图未初始化');return;}
   EXP_chartPie.setOption({
     backgroundColor:'transparent',
     tooltip:{trigger:'item',formatter:function(p){return p.name+'<br/>笔数: '+counts[p.data.key]+'<br/>金额: ¥'+expFmt(amounts[p.data.key])+'<br/>占比: '+p.percent+'%';}},
@@ -8911,6 +8956,7 @@ function renderExpTaxiPie(stats){
       data:Object.keys(labels).map(function(k,i){return{name:labels[k],value:counts[k],key:k,itemStyle:{color:pieColors[i]}};})
     }]
   },true);
+  setTimeout(function(){if(EXP_chartPie)EXP_chartPie.resize();},50);
 }
 
 function renderExpTrendChart(stats){
@@ -8931,25 +8977,47 @@ function renderExpTrendChart(stats){
     mealByM[m]=ml.reduce(function(s,r){return s+parseFloat(r['企业结算金额']||0);},0);
   });
 
+  if(!EXP_chartTrend){console.warn('月度趋势图表未初始化');return;}
+  // Calculate total per month for trend line and month-over-month comparison
+  var totalByM={};
+  months.forEach(function(m){totalByM[m]=taxiByM[m]+hotelByM[m]+flightByM[m]+trainByM[m]+vasByM[m]+mealByM[m];});
+  // Calculate month-over-month rate
+  var momRates={};
+  months.forEach(function(m,i){
+    if(i>0&&totalByM[months[i-1]]>0){
+      momRates[m]=((totalByM[m]-totalByM[months[i-1]])/totalByM[months[i-1]]*100).toFixed(1);
+    }else{momRates[m]='--';}
+  });
+
   EXP_chartTrend.setOption({
     backgroundColor:'transparent',
     tooltip:{trigger:'axis',formatter:function(params){
       var s=params[0].axisValue+'<br/>';
-      params.forEach(function(p){s+=p.marker+p.seriesName+': ¥'+expFmt(p.value)+'<br/>';});
+      params.forEach(function(p){
+        if(p.seriesName==='费用合计'){s+=p.marker+p.seriesName+': ¥'+expFmt(p.value)+'<br/>';}
+        else if(p.seriesName==='环比增减'){s+=p.marker+p.seriesName+': '+(p.value!=='--'?(parseFloat(p.value)>0?'+':'')+p.value+'%':'--')+'<br/>';}
+        else{s+=p.marker+p.seriesName+': ¥'+expFmt(p.value)+'<br/>';}
+      });
       return s;
     }},
-    legend:{data:['打车','酒店','机票','火车','增值服务'],textStyle:{color:'#8892b0',fontSize:11},top:0},
-    grid:{left:70,right:20,top:36,bottom:30},
+    legend:{data:['打车','酒店','机票','火车','增值服务','费用合计'],textStyle:{color:'#8892b0',fontSize:11},top:0},
+    grid:{left:70,right:60,top:36,bottom:30},
     xAxis:{type:'category',data:months.map(function(m){return m+'月';}),axisLabel:{color:'#8892b0'},axisLine:{lineStyle:{color:'#1e2a5a'}},axisTick:{show:false}},
-    yAxis:{type:'value',axisLabel:{color:'#8892b0',fontSize:11,formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v;}},splitLine:{lineStyle:{color:'#1e2a5a',type:'dashed'}},axisLine:{show:false}},
+    yAxis:[
+      {type:'value',axisLabel:{color:'#8892b0',fontSize:11,formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v;}},splitLine:{lineStyle:{color:'#1e2a5a',type:'dashed'}},axisLine:{show:false}},
+      {type:'value',show:false}
+    ],
     series:[
       {name:'打车',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(taxiByM[m].toFixed(2));}),lineStyle:{color:'#00f0a0'},itemStyle:{color:'#00f0a0'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(0,240,160,0.2)'},{offset:1,color:'rgba(0,240,160,0)'}]}}},
       {name:'酒店',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(hotelByM[m].toFixed(2));}),lineStyle:{color:'#ff9f43'},itemStyle:{color:'#ff9f43'}},
       {name:'机票',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(flightByM[m].toFixed(2));}),lineStyle:{color:'#a55eea'},itemStyle:{color:'#a55eea'}},
       {name:'火车',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(trainByM[m].toFixed(2));}),lineStyle:{color:'#00d4ff'},itemStyle:{color:'#00d4ff'}},
-      {name:'增值服务',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(vasByM[m].toFixed(2));}),lineStyle:{color:'#ffd93d'},itemStyle:{color:'#ffd93d'}}
+      {name:'增值服务',type:'line',smooth:true,symbol:'circle',symbolSize:6,data:months.map(function(m){return parseFloat(vasByM[m].toFixed(2));}),lineStyle:{color:'#ffd93d'},itemStyle:{color:'#ffd93d'}},
+      {name:'费用合计',type:'line',smooth:false,symbol:'diamond',symbolSize:10,data:months.map(function(m){return parseFloat(totalByM[m].toFixed(2));}),lineStyle:{color:'#ffffff',width:2,type:'dashed'},itemStyle:{color:'#ffffff'},
+        label:{show:true,position:'top',color:'#e0e6f0',fontSize:11,formatter:function(p){var m=months[p.dataIndex];return momRates[m]!=='--'?(parseFloat(momRates[m])>0?'↑':'↓')+Math.abs(parseFloat(momRates[m]))+'%':'';}}}
     ]
   },true);
+  setTimeout(function(){if(EXP_chartTrend)EXP_chartTrend.resize();},50);
 }
 
 function renderExpAnomalyTable(stats){
@@ -9045,6 +9113,74 @@ function renderExpEmpTable(stats){
       tbody.appendChild(tr);
     });
   });
+}
+
+// ===== COMPARISON BAR =====
+function renderExpCompareBar(stats){
+  var bar=document.getElementById('exp-compare-bar');
+  if(!bar)return;
+  bar.innerHTML='';
+  // Calculate month-over-month comparisons
+  var months=['1','2','3'];
+  var taxiByM={},totalByM={};
+  months.forEach(function(m){
+    var tx=EXP_ALL_DATA.taxi.filter(function(r){return r._month===m;});
+    taxiByM[m]=tx.reduce(function(s,r){return s+parseFloat(r['企业实付金额']||0);},0);
+    var allTypes=[].concat(EXP_ALL_DATA.taxi,EXP_ALL_DATA.hotel,EXP_ALL_DATA.flight,EXP_ALL_DATA.train,EXP_ALL_DATA.vas,EXP_ALL_DATA.meal,EXP_ALL_DATA.subsidy,EXP_ALL_DATA.finance);
+    totalByM[m]=allTypes.filter(function(r){return r._month===m;}).reduce(function(s,r){
+      var key=r._type==='flight'?'企业实付':r._type==='vas'?'单价':r._type==='meal'?'企业结算金额':r._type==='subsidy'?'出差补助':r._type==='finance'?'核定金额':'企业实付金额';
+      return s+parseFloat(r[key]||0);
+    },0);
+  });
+  // Find latest month with data for comparison
+  var latestM=null,prevM=null;
+  for(var i=months.length-1;i>=0;i--){
+    if(totalByM[months[i]]>0){latestM=months[i];if(i>0)prevM=months[i-1];break;}
+  }
+  if(!latestM)return;
+
+  function addItem(label,val,prevVal,unit){
+    var div=document.createElement('div');div.className='exp-compare-item';
+    var rate='--';var cls='exp-compare-neutral';
+    if(prevVal&&prevVal>0){
+      var r=((val-prevVal)/prevVal*100).toFixed(1);
+      rate=(parseFloat(r)>0?'+':'')+r+'%';
+      cls=parseFloat(r)>0?'exp-compare-up':parseFloat(r)<0?'exp-compare-down':'exp-compare-neutral';
+    }
+    div.innerHTML='<span>'+label+'</span><span class="exp-compare-val">'+expFmtK(val)+'</span><span class="exp-compare-val '+cls+'">'+rate+'</span>';
+    bar.appendChild(div);
+  }
+
+  addItem(latestM+'月总额',totalByM[latestM],prevM?totalByM[prevM]:0);
+  addItem(latestM+'月打车',taxiByM[latestM],prevM?taxiByM[prevM]:0);
+
+  // Per-capita comparison by dept
+  var taxiData=expFilterByDept(expFilterByMonth(EXP_ALL_DATA.taxi),'工号');
+  var deptTaxi={};
+  taxiData.forEach(function(r){
+    var eid=r['工号']||'';var d2=getExpEmpDept2(eid);var rawD2=(r['二级部门']||'').replace(/^0$/,'');
+    if(rawD2)d2=rawD2;if(!d2||d2==='0')d2='未分配';
+    if(!deptTaxi[d2])deptTaxi[d2]={total:0,emps:{}};
+    deptTaxi[d2].total+=parseFloat(r['企业实付金额']||0);
+    deptTaxi[d2].emps[eid]=true;
+  });
+  // Find dept with highest per-capita taxi cost
+  var maxDept=null,maxAvg=0;
+  Object.keys(deptTaxi).forEach(function(d){
+    var ec=Object.keys(deptTaxi[d].emps).length;var avg=ec>0?deptTaxi[d].total/ec:0;
+    if(avg>maxAvg){maxAvg=avg;maxDept=d;}
+  });
+  if(maxDept){
+    var div=document.createElement('div');div.className='exp-compare-item';
+    div.innerHTML='<span>打车人均最高</span><span class="exp-compare-val" style="color:var(--exp-orange)">'+maxDept+'</span><span class="exp-compare-val">¥'+expFmt(maxAvg)+'</span>';
+    bar.appendChild(div);
+  }
+
+  // Anomaly summary
+  var highCount=stats.filteredAnomalies.filter(function(a){return a.severity==='high';}).length;
+  var div=document.createElement('div');div.className='exp-compare-item';
+  div.innerHTML='<span>高危异常</span><span class="exp-compare-val" style="color:var(--exp-warn)">'+highCount+'条</span><span>需立即核查</span>';
+  bar.appendChild(div);
 }
 
 // ===== INTERACTIONS =====
