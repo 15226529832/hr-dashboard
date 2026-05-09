@@ -29,7 +29,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 #dept-select{padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text);font-size:13px;outline:none}
 .cards-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:transform 0.3s}
-.stat-card:hover{transform:translateY(-2px)}
+.stat-card:hover{transform:translateY(-2px)}.stat-card.c5 .value{animation:pulse 2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
 .stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:2px}
 .stat-card.c1::before{background:var(--accent)}.stat-card.c2::before{background:var(--accent2)}.stat-card.c3::before{background:var(--orange)}.stat-card.c4::before{background:var(--purple)}.stat-card.c5::before{background:var(--warn)}
 .stat-card .label{font-size:13px;color:var(--text2);margin-bottom:6px}
@@ -365,8 +365,8 @@ function detectAnomalies(){
       }
     }
 
-    // 交叉验证: 加班用车但无加班打卡
-    if(cat==='overtime'&&dt){
+    // 交叉验证: 加班用车但无加班打卡 (仅检查工作日加班用车和备注为加班的用车)
+    if(cat==='overtime'&&dt&&!isWeekend(dt)){
       var key=dateStr.replace(/-/g,'');
       if(!overtimeSet[eid]||!overtimeSet[eid][key]){
         ANOMALIES.push({name:name,eid:eid,d2:d2,type:'无加班记录',detail:dateStr+' 加班打车但无对应加班打卡记录',amount:amt,date:dateStr,severity:'mid',src:'taxi',raw:r});
