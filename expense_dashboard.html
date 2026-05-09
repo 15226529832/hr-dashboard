@@ -256,7 +256,7 @@ function buildEmpInfo(){
   all.forEach(function(r){
     var eid=r['工号']||r['员工编码']||r['员工编号']||r['预订人工号']||'';
     if(!eid||eid==='0')return;
-    var name=r['姓名']||r['申请人']||'';
+    var name=r['姓名']||r['申请人']||r['预订人']||'';
     var d1=(r['一级部门']||'').replace(/^0$/,'');
     var rawD2=(r['二级部门']||'');
     var d2=rawD2.replace(/^0$/,'');
@@ -446,8 +446,8 @@ function detectAnomalies(){
 
   // Meal anomalies
   filterByMonth(ALL_DATA.meal).forEach(function(r){
-    var eid=r['用餐人']||r['预订人工号']||'';
-    var name=r['预订人']||r['用餐人']||'';
+    var eid=r['预订人工号']||r['用餐人']||'';
+    var name=r['预订人']||EMP_INFO[eid]?EMP_INFO[eid].name:(r['用餐人']||'');
     var amt=parseFloat(r['企业结算金额']||'0');
     var rawD2=(r['二级部门']||'').replace(/^0$/,'');
     var d2=rawD2||getEmpDept2(eid);
@@ -468,6 +468,7 @@ function detectAnomalies(){
     }
   });
 
+  // Note: 2月数据部分缺失（无酒店/机票/增值服务/差旅补贴/财务报销Sheet）
   // Sort by severity
   var sevOrder={high:0,mid:1,low:2};
   ANOMALIES.sort(function(a,b){return sevOrder[a.severity]-sevOrder[b.severity];});
@@ -480,9 +481,9 @@ function computeStats(){
   var flight=filterByDept(filterByMonth(ALL_DATA.flight),'工号');
   var train=filterByDept(filterByMonth(ALL_DATA.train),'工号');
   var vas=filterByDept(filterByMonth(ALL_DATA.vas),'预订人工号');
-  var meal=filterByDept(filterByMonth(ALL_DATA.meal),'用餐人');
+  var meal=filterByDept(filterByMonth(ALL_DATA.meal),'预订人工号');
   var subsidy=filterByDept(filterByMonth(ALL_DATA.subsidy),'员工编号');
-  var finance=filterByDept(filterByMonth(ALL_DATA.finance),'二级部门');
+  var finance=filterByMonth(ALL_DATA.finance);if(currentDept!=='all')finance=finance.filter(function(r){var d2=(r['二级部门']||'').replace(/^0$/,'');return d2===currentDept;});
 
   function sum(arr,key){return arr.reduce(function(s,r){return s+parseFloat(r[key]||'0');},0);}
 
@@ -492,6 +493,10 @@ function computeStats(){
   var trainTotal=sum(train,'企业实付金额');
   var vasTotal=sum(vas,'单价');
   var mealTotal=sum(meal,'企业结算金额');
+  // Also calculate overtime meal cost from overtime attendance data (餐次测算 × 30元)
+  var overtimeData=filterByDept(filterByMonth(ALL_DATA.overtime),'工号');
+  var overtimeMealCost=overtimeData.reduce(function(s,r){return s+parseFloat(r['餐次测算']||0)*30;},0);
+  mealTotal=mealTotal+overtimeMealCost;
   var subsidyTotal=sum(subsidy,'出差补助');
   var financeTotal=sum(finance,'核定金额');
   var travelTotal=hotelTotal+flightTotal+trainTotal;
@@ -548,7 +553,9 @@ function render(){
   document.getElementById('v-total-sub').textContent='差旅'+fmtK(stats.travelTotal)+' | 补贴'+fmtK(stats.subsidyTotal);
   document.getElementById('v-taxi-sub').textContent=stats.taxi.length+'笔';
   document.getElementById('v-travel-sub').textContent='机票+火车+酒店';
-  document.getElementById('v-meal-sub').textContent=stats.meal.length+'笔';
+  var overtimeData4Card=filterByDept(filterByMonth(ALL_DATA.overtime),'工号');
+  var overtimeMealCost4Card=overtimeData4Card.reduce(function(s,r){return s+parseFloat(r['餐次测算']||0)*30;},0);
+  document.getElementById('v-meal-sub').textContent='含加班餐补'+fmtK(overtimeMealCost4Card);
   renderDeptChart(stats);
   renderTaxiPie(stats);
   renderTrendChart(stats);
@@ -574,7 +581,7 @@ function renderDeptChart(stats){
   var flightMap=aggregateByDept2(stats.flight,'工号','企业实付');
   var trainMap=aggregateByDept2(stats.train,'工号','企业实付金额');
   var vasMap=aggregateByDept2(stats.vas,'预订人工号','单价');
-  var mealMap=aggregateByDept2(stats.meal,'用餐人','企业结算金额');
+  var mealMap=aggregateByDept2(stats.meal,'预订人工号','企业结算金额');
 
   var maps={'打车':taxiMap,'酒店':hotelMap,'机票':flightMap,'火车':trainMap,'增值服务':vasMap,'加班餐':mealMap};
   var colors={'打车':'#00f0a0','酒店':'#ff9f43','机票':'#a55eea','火车':'#00d4ff','增值服务':'#ffd93d','加班餐':'#ff6b6b'};
@@ -713,7 +720,7 @@ function renderEmpTable(stats){
   flightData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].flight+=parseFloat(r['企业实付']||0);});
   trainData.forEach(function(r){var eid=r['工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].train+=parseFloat(r['企业实付金额']||0);});
   vasData.forEach(function(r){var eid=r['预订人工号']||'';addEmp(eid);if(empMap[eid])empMap[eid].vas+=parseFloat(r['单价']||0);});
-  mealData.forEach(function(r){var eid=r['用餐人']||'';addEmp(eid);if(empMap[eid])empMap[eid].meal+=parseFloat(r['企业结算金额']||0);});
+  mealData.forEach(function(r){var eid=r['预订人工号']||r['用餐人']||'';addEmp(eid);if(empMap[eid])empMap[eid].meal+=parseFloat(r['企业结算金额']||0);});
   subsidyData.forEach(function(r){var eid=r['员工编号']||'';addEmp(eid);if(empMap[eid])empMap[eid].subsidy+=parseFloat(r['出差补助']||0);});
 
   ANOMALIES.forEach(function(a){
