@@ -9075,7 +9075,7 @@ function renderExpTrendChart(stats){
 function renderExpAnomalyTable(stats){
   var tbody=document.getElementById('exp-anomaly-tbody');
   tbody.innerHTML='';
-  var list=stats.filteredAnomalies.slice(0,100);
+  var list=stats.filteredAnomalies.filter(function(a){return !EXP_VIRTUAL_EMPS[a.eid]&&a.name!=='张永祯';}).slice(0,100);
   list.forEach(function(a){
     var sevClass=a.severity==='high'?'exp-badge-high':a.severity==='mid'?'exp-badge-mid':'exp-badge-low';
     var tr=document.createElement('tr');
@@ -9303,7 +9303,7 @@ var EXP_VIOLATIONS_DATA=[];
 
 // ===== LOAD VIOLATIONS DATA =====
 function EXP_loadViolations(){
-  return fetch('./expense_data/violations.csv').then(function(r){
+  return fetch('./expense_data/violations.csv?t='+Date.now()).then(function(r){
     if(!r.ok)return[];
     return r.text();
   }).then(function(t){
@@ -9422,6 +9422,14 @@ function EXP_renderViolationsTable(){
   tbody.innerHTML='';
   
   var filteredData=EXP_VIOLATIONS_DATA;
+  // Exclude virtual org members
+  filteredData=filteredData.filter(function(r){
+    var eid=(r['工号']||'').replace(/^0+/,'');
+    if(EXP_VIRTUAL_EMPS['0'+eid]||EXP_VIRTUAL_EMPS[eid])return false;
+    var name=r['姓名']||'';
+    if(name==='刘长波'||name==='白桦'||name==='韩璐'||name==='张克慧'||name==='张永祯')return false;
+    return true;
+  });
   // Filter by month
   if(EXP_currentMonth!=='all'){
     var mNum=parseInt(EXP_currentMonth);
