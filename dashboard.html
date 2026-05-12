@@ -8841,7 +8841,9 @@ function expComputeStats(){
   var travelTotal=hotelTotal+flightTotal+trainTotal;
   var totalAll=taxiTotal+travelTotal+mealTotal+vasTotal+subsidyTotal+financeTotal;
 
+  var _virtualNames={'刘长波':1,'白桦':1,'韩璐':1,'张克慧':1,'张永祯':1};
   var filteredAnomalies=EXP_ANOMALIES.filter(function(a){
+    if(_virtualNames[a.name])return false;
     if(EXP_currentMonth!=='all'&&a.date){var m=parseInt(a.date.split('-')[1]);if(m!==parseInt(EXP_currentMonth))return false;}
     if(EXP_currentDept!=='all'&&a.d2!==EXP_currentDept)return false;
     return true;
@@ -9075,7 +9077,8 @@ function renderExpTrendChart(stats){
 function renderExpAnomalyTable(stats){
   var tbody=document.getElementById('exp-anomaly-tbody');
   tbody.innerHTML='';
-  var list=stats.filteredAnomalies.filter(function(a){return !EXP_VIRTUAL_EMPS[a.eid]&&a.name!=='张永祯';}).slice(0,100);
+  var _vn={'刘长波':1,'白桦':1,'韩璐':1,'张克慧':1,'张永祯':1};
+  var list=stats.filteredAnomalies.filter(function(a){return !_vn[a.name];}).slice(0,100);
   list.forEach(function(a){
     var sevClass=a.severity==='high'?'exp-badge-high':a.severity==='mid'?'exp-badge-mid':'exp-badge-low';
     var tr=document.createElement('tr');
@@ -9422,12 +9425,11 @@ function EXP_renderViolationsTable(){
   tbody.innerHTML='';
   
   var filteredData=EXP_VIOLATIONS_DATA;
-  // Exclude virtual org members
+  // Exclude virtual org members by name (hardcoded for reliability)
+  var _vn2={'刘长波':1,'白桦':1,'韩璐':1,'张克慧':1,'张永祯':1};
   filteredData=filteredData.filter(function(r){
-    var eid=(r['工号']||'').replace(/^0+/,'');
-    if(EXP_VIRTUAL_EMPS['0'+eid]||EXP_VIRTUAL_EMPS[eid])return false;
     var name=r['姓名']||'';
-    if(name==='刘长波'||name==='白桦'||name==='韩璐'||name==='张克慧'||name==='张永祯')return false;
+    if(_vn2[name])return false;
     return true;
   });
   // Filter by month
